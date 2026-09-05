@@ -1,0 +1,36 @@
+# Netlify hosts the web UI only. The API is a long-running Python service
+# with a ~200MB vector index on disk; Netlify Functions run JS/TS and Go,
+# not Python, and cap at 250MB unzipped, so the API is deployed separately
+# (see render.yaml) and this site is pointed at it.
+#
+# Required build environment variable, set in the Netlify UI:
+#   VITE_API_BASE = https://<your-api-host>/api/v1
+# Without it the site falls back to a same-origin /api/v1 that does not
+# exist here, and every page shows the sample-data banner.
+
+[build]
+  base    = "frontend"
+  command = "npm ci && npm run build"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# The UI is a single-page app: /ask, /cases and /review are client-side
+# routes with no file behind them, so a reload or a shared link 404s
+# without this rewrite.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Fonts are self-hosted; let them cache as long as the hashed assets.
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

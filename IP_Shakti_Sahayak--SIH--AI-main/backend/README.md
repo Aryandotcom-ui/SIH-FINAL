@@ -1,0 +1,184 @@
+# IP-SAKTI Sahayak — FastAPI Backend
+
+This backend exposes the existing AI/RAG pipeline to the frontend without
+reimplementing retrieval or generation logic.
+
+## Backend structure
+
+- `app/main.py` — FastAPI application, CORS, liveness endpoint, starts the
+  auto-update scheduler when `UPDATES_SCHEDULER_ENABLED=true`
+- `app/api/routes.py` — `/query`, `/corpus`
+- `app/api/updates_routes.py` — `/updates/*`, the auto-update review gate
+- `app/api/patent_prep_routes.py` — `/patent-cases/*`, patent prep and tracking
+- `app/schemas.py` — Pydantic request/response contracts
+- `app/services/ai_service.py` — adapter between FastAPI and the existing AI/RAG pipeline
+- `app/services/updates_service.py` — adapter between FastAPI and `ai/updates`
+- `app/services/patent_prep_service.py` — adapter between FastAPI and `ai/patent_prep`
+- `tests/test_api.py` — backend API tests
+
+## API endpoints
+
+### `GET /health`
+
+Liveness check. Returns HTTP 200 when the API process is running.
+
+### `GET /api/v1/corpus`
+
+Reports the configured Chroma collection and number of indexed chunks.
+
+### `POST /api/v1/query`
+
+Runs the existing retrieval → confidence/abstention → generation pipeline,
+an ABS-compliance screening off the same classification (see
+`ai/compliance`), and logs the query to the DPDP-aligned audit trail (see
+`ai/audit.py`).
+
+Example request:
+
+```json
+{
+  "query": "Can a classical Ayurvedic formulation be patented in India?",
+  "classification": {
+    "formulation_type": "classical",
+    "source_organism": "plant",
+    "jurisdiction": "india"
+  },
+  "top_k": 5,
+  "compliance_facts": {
+    "applicant_category": "indian_individual",
+    "resource_origin": "india"
+  },
+  "consent_licensed_acts": [],
+  "language": null
+}
+```
+
+`consent_licensed_acts` names any `access: licensed` acts (see
+`ai/corpus.yaml`'s header) the requester consents to being answered from.
+Retrieval matching a licensed act without consent for that exact act name
+has its citation withheld — `licensed_sources_withheld` in the response
+says which. Every document currently in the corpus is public, so this is
+normally an empty list on both sides.
+
+`language` is an explicit source-language override (e.g. `"hi"`, `"ta"`);
+omit it to auto-detect from the query text (see `ai/translation.py` — a
+Unicode-script heuristic, not a language-ID model, so pass this when the
+caller actually knows the language). The query is translated to English
+before retrieval (`ai/embedder.py`'s default model is English-only) and
+the answer translates back; citations and `act_name` are never
+translated. Without `BHASHINI_API_KEY`/`BHASHINI_USER_ID` configured,
+text passes through untranslated and the response's `translated` field
+is `false` — the answer is still correct, just not delivered in the
+requester's language.
+
+The response also carries `audit_id`, the id of the row this query wrote
+to the audit log, `compliance`, the ABS obligation report (`null` when
+neither a classification nor compliance facts were supplied), `language`
+(the language `answer_text`/`disclaimer` are in), and `translated`.
+
+### Auto-update pipeline (`/api/v1/updates/*`)
+
+Wraps `ai/updates` (see its own README for the tier logic). Off by
+default — set `UPDATES_SCHEDULER_ENABLED=true` to have the process poll
+`ai/updates/sources.yaml` on a schedule (`UPDATES_INTERVAL_MINUTES`,
+default 60), and `UPDATES_AUTO_INGEST=true` to let AUTO_PUBLISH /
+PUBLISH_THEN_AUDIT tiers ingest immediately rather than sit in the queue
+for an operator to publish explicitly.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /updates/pending` | MANDATORY_REVIEW items awaiting approve/reject |
+| `GET /updates/queued` | Cleared but not yet ingested (the backlog when `UPDATES_AUTO_INGEST=false`) |
+| `GET /updates/needs-audit` | Already-published PUBLISH_THEN_AUDIT items awaiting sign-off |
+| `GET /updates/history?limit=50` | Decided/published/failed entries |
+| `POST /updates/check-now` | Run one watch cycle synchronously — `{"auto_ingest": true\|false\|null}` |
+| `POST /updates/{id}/approve` | `{"decided_by": "...", "notes": "..."}` |
+| `POST /updates/{id}/reject` | Same body shape |
+| `POST /updates/{id}/clear-audit` | Sign off a `needs-audit` entry |
+| `POST /updates/{id}/publish` | Run the real ingestion pipeline for an `approved`/`queued_for_ingest` entry |
+
+`decided_by` is free text, not checked against a login session — see
+`ai/updates/README.md`'s "what's a skeleton" section before exposing
+these beyond a trusted operator.
+
+### Patent preparation and tracking (`/api/v1/patent-cases/*`)
+
+Wraps `ai/patent_prep` (see its own README) — a module separate from the
+RAG core: intake, an ABS/prior-art precheck, draft form content, and
+deadline tracking for one case, ending in a handoff package for a
+registered patent agent.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /patent-cases` | Create a case from intake fields (see `CaseIntakeRequest`) |
+| `GET /patent-cases?status=...` | List cases, optionally filtered |
+| `GET /patent-cases/{id}` | Full case record |
+| `GET /patent-cases/{id}/events` | Case event history |
+| `PUT /patent-cases/{id}/intake` | Replace the intake (facts arrive over several conversations) |
+| `POST /patent-cases/{id}/precheck` | Run the ABS/prior-art screening (`ai.compliance.assess()`) |
+| `POST /patent-cases/{id}/draft-forms` | Draft Form 1 / Form 3 (and Form 27, once granted) |
+| `GET /patent-cases/{id}/deadlines` | Computed deadlines — some `review_status: draft`, confirm before relying on them |
+| `POST /patent-cases/{id}/handoff` | Bundle everything and record the handoff to an agent |
+| `POST /patent-cases/{id}/status` | Set any status, including ones this module cannot observe itself (`filed`, `granted`, ...) |
+
+Draft form content is a preparation aid, not a filed copy — see
+`ai/patent_prep/README.md`'s "Draft forms are not filled official forms"
+section.
+
+## Setup
+
+From the repository root:
+
+```bash
+python -m venv .venv
+# Windows PowerShell
+.venv\\Scripts\\Activate.ps1
+
+pip install -r backend/requirements.txt
+```
+
+Copy `backend/.env.example` to `backend/.env` and configure the values you
+need. `ANTHROPIC_API_KEY` is required only for live answer generation; retrieval
+and abstention are handled before the LLM call.
+
+The backend uses `data/chroma` by default. That directory must contain the
+indexed corpus generated by the existing ingestion pipeline.
+
+## Build the corpus
+
+Place the approved legal/reference PDFs in a local input directory and run the
+existing ingestion CLI from the repository root, for example:
+
+```bash
+python -m ai.cli data/pdfs --manifest ai/corpus.yaml --chroma-path data/chroma --sqlite-path data/registry.sqlite3
+```
+
+Use `--dry-run` first when validating a new corpus. Do not commit private API
+keys or restricted source documents to the repository.
+
+## Run the API
+
+Recommended command:
+
+```bash
+uvicorn app.main:app --reload --app-dir backend
+```
+
+The `app` package also uses relative imports, so importing it through
+`backend.app.main` works when the repository root is on `PYTHONPATH`.
+
+OpenAPI documentation:
+
+- `/docs`
+- `/redoc`
+
+## Tests
+
+Run all project tests:
+
+```bash
+python -m pytest -q
+```
+
+The backend tests mock the AI service where appropriate, so they do not require
+an API key or a populated production corpus.

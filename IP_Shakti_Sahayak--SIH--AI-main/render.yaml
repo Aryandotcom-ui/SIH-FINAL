@@ -1,0 +1,43 @@
+# Render blueprint for the API (free tier). Netlify serves the web UI;
+# this serves everything under /api/v1.
+#
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repository.
+# Then set the two secrets marked sync:false below.
+#
+# Free-tier caveats, both real:
+#  - The service sleeps after ~15 minutes idle, so the first request after
+#    a quiet spell waits ~50s for a cold start. The UI's fetch timeout is
+#    12s, so that first request shows the sample-data banner; a reload
+#    once the service is awake gets real answers.
+#  - 512MB RAM. The index is ~200MB on disk and Chroma memory-maps it, so
+#    this fits, but there is not much headroom.
+
+services:
+  - type: web
+    name: ip-sakti-api
+    runtime: python
+    plan: free
+    region: singapore          # closest free region to the users
+    rootDir: .
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r backend/requirements.txt
+      # The index is not in version control: it derives from data/pdfs and
+      # rebuilds in about a minute. Building it here rather than shipping
+      # it keeps the repository small and the index always matching the
+      # corpus that produced it.
+      python -m ai.cli data/pdfs --manifest ai/corpus.yaml --model tfidf
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir backend
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Comma-separated. Must include the Netlify site origin, with no
+      # trailing slash, or the browser blocks every API call.
+      - key: CORS_ORIGINS
+        sync: false
+      # Without this the API still answers with real citations, sources
+      # and compliance screening; only the prose is a canned stand-in,
+      # and the UI labels it as such.
+      - key: GROQ_API_KEY
+        sync: false
