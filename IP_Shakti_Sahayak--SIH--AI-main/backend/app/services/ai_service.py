@@ -146,6 +146,247 @@ class AIService:
                 )
         return counts
 
+    # ------------------------------------------------------------------
+    # Views over what the pipeline already produces
+    #
+    # Nothing below adds a second answer path. Each method reads data the
+    # system has already computed -- the corpus manifest, the audit trail,
+    # the compliance graph -- and shapes it for one page. A trust surface
+    # that recomputed its own version of the answer would be showing the
+    # user something other than what they were told, which is the opposite
+    # of what it is for.
+    # ------------------------------------------------------------------
+
+    def chunk_counts_by_act(self) -> dict[str, int]:
+        """How many chunks each act_name contributed to the index.
+
+        Degrades to {} rather than raising: the sources page is still
+        worth showing without the counts, and an unbuilt index is a normal
+        state on a fresh clone.
+        """
+        counts: dict[str, int] = {}
+        try:
+            got = self.store.collection.get(include=["metadatas"])
+        except Exception:  # pragma: no cover - defensive
+            logging.getLogger(__name__).exception("could not count chunks per act")
+            return {}
+        for meta in got.get("metadatas") or []:
+            act = (meta or {}).get("act_name")
+            if act:
+                counts[act] = counts.get(act, 0) + 1
+        return counts
+
+    def corpus_documents(self) -> list[dict[str, Any]]:
+        """The corpus library, straight from ai/corpus.yaml.
+
+        `source_url` is passed through as None when the manifest has none,
+        and the UI says "no public link" rather than hiding the row. The
+        manifest's own header is explicit that a document we cannot link
+        is still a document we answer from, and a library that quietly
+        dropped those would misrepresent how much of the corpus is
+        verifiable by the reader.
+        """
+        import yaml
+
+        path = Path(settings.corpus_manifest_path)
+        if not path.is_file():
+            return []
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        counts = self.chunk_counts_by_act()
+        documents = []
+        for entry in data.get("documents") or []:
+            act_name = entry.get("act_name")
+            documents.append({
+                "act_name": act_name,
+                "file": entry.get("file"),
+                "status": entry.get("status") or "unknown",
+                "jurisdiction": entry.get("jurisdiction"),
+                "instrument_type": entry.get("instrument_type"),
+                "effective_date": entry.get("effective_date"),
+                "source_url": entry.get("source_url"),
+                "access": entry.get("access") or "public",
+                # Absent for a `pending` document, which is listed because
+                # the graph cites it, not because we hold the text.
+                "chunks": counts.get(act_name, 0),
+                "section_effective_dates": entry.get("section_effective_dates") or {},
+            })
+        return documents
+
+    def status(self) -> dict[str, Any]:
+        """What is actually running, as opposed to what is configured.
+
+        The distinction matters here more than it usually does. The
+        embedder is chosen by which artifact sits beside the index, not by
+        EMBEDDING_MODEL (see the `embedder` property), and generation falls
+        back to canned prose when no API key is set. Both of those are
+        honest degradations, and both are invisible unless something says
+        so out loud.
+        """
+        from ai.embedder import TfidfEmbedder
+
+        info: dict[str, Any] = {
+            "configured_embedding_model": settings.embedding_model,
+            "abstain_threshold": settings.abstain_threshold,
+            "default_top_k": settings.top_k,
+            # "live" once a key is configured; "mock" means answer prose is
+            # a deterministic stand-in and the UI must keep saying so.
+            "generation_mode": "live" if settings.groq_api_key else "mock",
+            "llm_model": settings.llm_model if settings.groq_api_key else None,
+            "translation_configured": bool(
+                settings.bhashini_api_key and settings.bhashini_user_id
+            ),
+        }
+        try:
+            embedder = self.embedder
+            info["active_embedding_model"] = getattr(
+                embedder, "name", settings.embedding_model
+            )
+            info["embedding_dimension"] = getattr(embedder, "dimension", None)
+            # The fallback backend is gated to exactly this case, and a
+            # user comparing two answers deserves to know which vector
+            # space produced them.
+            info["embedding_is_fallback"] = isinstance(embedder, TfidfEmbedder)
+        except Exception as exc:  # pragma: no cover - defensive
+            logging.getLogger(__name__).exception("could not describe the embedder")
+            info["active_embedding_model"] = None
+            info["embedding_dimension"] = None
+            info["embedding_is_fallback"] = None
+            info["embedder_error"] = f"{type(exc).__name__}: {exc}"
+
+        try:
+            info["chunks"] = self.corpus_count()
+            info["index_ready"] = info["chunks"] > 0
+            info["collection"] = self.store.collection.name
+        except Exception as exc:
+            info["chunks"] = 0
+            info["index_ready"] = False
+            info["collection"] = settings.chroma_collection
+            info["index_error"] = f"{type(exc).__name__}: {exc}"
+
+        try:
+            info["audit_entries"] = self.audit.count()
+        except Exception:  # pragma: no cover - defensive
+            info["audit_entries"] = None
+        return info
+
+    def evidence(self, audit_id: str) -> dict[str, Any] | None:
+        """Reconstruct why one answer came out the way it did.
+
+        Reads the audit row written when the answer was given, and joins
+        the recorded chunk scores back to the chunk text and the corpus
+        manifest. Nothing is re-retrieved: ranking the query again today
+        would rank it against today's corpus, and presenting that as the
+        reason for yesterday's answer would be a fabrication with the shape
+        of an explanation.
+
+        Rows written before retrieval detail was recorded come back with
+        `detail_recorded: False` and no per-chunk scores, rather than with
+        zeros -- "not recorded" and "scored zero" are different claims.
+        """
+        import json
+
+        try:
+            row = self.audit.get(audit_id)
+        except Exception as exc:  # pragma: no cover - defensive
+            raise RuntimeError(f"audit trail unavailable: {exc}") from exc
+        if row is None:
+            return None
+
+        def _load(value: str | None, default: Any) -> Any:
+            if not value:
+                return default
+            try:
+                return json.loads(value)
+            except (TypeError, ValueError):
+                return default
+
+        detail = _load(row.get("retrieval_detail"), None)
+        matched_ids = _load(row.get("matched_chunk_ids"), [])
+        citations = _load(row.get("citations"), [])
+
+        # Chunk text lives in the index, not in the audit trail (the trail
+        # records identifiers so it does not become a second copy of the
+        # corpus). Look up whatever is still there; a chunk removed by a
+        # later re-ingest is reported as missing rather than silently
+        # dropped, since "this answer cited something no longer in the
+        # corpus" is exactly the kind of thing an evidence view exists to
+        # make visible.
+        texts: dict[str, dict[str, Any]] = {}
+        ids = [d.get("chunk_id") for d in detail] if detail else list(matched_ids)
+        ids = [i for i in ids if i]
+        if ids:
+            try:
+                got = self.store.collection.get(
+                    ids=ids, include=["documents", "metadatas"]
+                )
+                for i, chunk_id in enumerate(got.get("ids") or []):
+                    documents = got.get("documents") or []
+                    metadatas = got.get("metadatas") or []
+                    texts[chunk_id] = {
+                        "text": documents[i] if i < len(documents) else None,
+                        "metadata": (metadatas[i] if i < len(metadatas) else None) or {},
+                    }
+            except Exception:  # pragma: no cover - defensive
+                logging.getLogger(__name__).exception(
+                    "could not load chunk text for audit %s", audit_id
+                )
+
+        chunks = []
+        for entry in (detail or [{"chunk_id": i} for i in ids]):
+            chunk_id = entry.get("chunk_id")
+            found = texts.get(chunk_id)
+            metadata = (found or {}).get("metadata", {})
+            chunks.append({
+                "chunk_id": chunk_id,
+                "act_name": entry.get("act_name") or metadata.get("act_name"),
+                "section": entry.get("section") or metadata.get("section"),
+                "jurisdiction": entry.get("jurisdiction") or metadata.get("jurisdiction"),
+                # None, not 0.0, when the score was never recorded.
+                "similarity_score": entry.get("similarity_score"),
+                "source_url": entry.get("source_url") or metadata.get("source_url"),
+                "text": (found or {}).get("text"),
+                "still_in_corpus": found is not None,
+            })
+
+        # Citation validation: a citation the retrieved chunks do not
+        # support is the failure this project exists to catch, so it is
+        # counted rather than assumed away.
+        retrieved_pairs = {
+            (c["act_name"], c["section"]) for c in chunks
+            if c.get("act_name") and c.get("section")
+        }
+        validated = []
+        for citation in citations:
+            pair = (citation.get("act_name"), citation.get("section"))
+            validated.append({
+                "act_name": citation.get("act_name"),
+                "section": citation.get("section"),
+                "source_url": citation.get("source_url"),
+                "verified": pair in retrieved_pairs,
+            })
+
+        return {
+            "audit_id": row.get("id"),
+            "timestamp": row.get("ts"),
+            "query_text": row.get("query_text"),
+            "jurisdiction": row.get("jurisdiction"),
+            "formulation_type": row.get("formulation_type"),
+            "top_k": row.get("top_k"),
+            "confidence": row.get("confidence"),
+            "abstained": bool(row.get("should_abstain")),
+            "abstain_threshold": settings.abstain_threshold,
+            "llm_model": row.get("llm_model"),
+            "error": row.get("error"),
+            "chunks": chunks,
+            "citations": validated,
+            "citations_verified": sum(1 for c in validated if c["verified"]),
+            "citations_total": len(validated),
+            "licensed_acts_withheld": _load(row.get("licensed_acts_withheld"), []),
+            # False means this row predates per-chunk score recording, not
+            # that retrieval found nothing.
+            "detail_recorded": detail is not None,
+        }
+
     def retrieve(
         self,
         query: str,
@@ -495,6 +736,11 @@ class AIService:
                 gate=parts[0]["gate"] if parts else None,
                 disclaimer_shown=True,
                 llm_model=None if abstained else settings.llm_model,
+                # Per-chunk scores are not recoverable later: re-running
+                # this query tomorrow ranks against tomorrow's corpus, not
+                # against the one that produced this answer. Recorded here
+                # or lost.
+                retrieval_detail=sources,
             )
 
             return {

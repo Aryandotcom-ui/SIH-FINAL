@@ -152,6 +152,21 @@ These are real and worth knowing before you rely on anything here.
   `sentence-transformers`, uncomment it in `ai/requirements.txt`, and rebuild
   with `./scripts/run.sh --rebuild` — queries must be encoded in the same
   space as the chunks, so switching embedders *requires* a rebuild.
+- **On the offline embedder, abstention does not fire for out-of-scope
+  questions.** Measured, not estimated: over the 22 retrieval-scored
+  questions in `ai/person_c_generation/eval`, confidence for answerable
+  questions (0.41–0.90) and unanswerable ones (0.48–0.65) overlap completely,
+  so no threshold separates them and the system answers questions about GST
+  rates or company incorporation instead of abstaining. Recall@5 on the same
+  set is 41%. The abstention machinery works; the TF-IDF similarity signal
+  does not distinguish the two cases. `confidence.py` predicted this in a
+  comment — the eval turns it into a number. The neural comparison has not
+  been run (it needs model weights the measuring environment could not
+  download), so whether BGE fixes it is an open question, not a claim. See
+  `ai/person_c_generation/eval/README.md`.
+- **Retrieval is dense-only.** There is no BM25 or hybrid lexical stage and no
+  cross-encoder rerank. The only score reported anywhere is cosine similarity
+  against the question embedding.
 - **Deadlines marked "unverified"** come from rules whose current figures
   were not confirmed against amended text; the request-for-examination
   window in particular changed in 2024. Confirm before relying on any date.

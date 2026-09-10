@@ -15,6 +15,28 @@ const BASE = import.meta.env.VITE_API_BASE ?? '/api/v1';
 // Overridable for a deployment that is always warm.
 const TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 60000;
 
+/**
+ * The operator's bearer token.
+ *
+ * Held in sessionStorage, not localStorage: a reviewer's session should not
+ * outlive the browser tab. The reviewer console is the one surface that can
+ * change what enters the corpus, and a token that survives until someone
+ * thinks to log out is a token that survives a shared machine.
+ */
+const TOKEN_KEY = 'ipsakti-token';
+
+export const auth = {
+  get token() {
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
+  },
+  set token(value) {
+    try {
+      if (value) sessionStorage.setItem(TOKEN_KEY, value);
+      else sessionStorage.removeItem(TOKEN_KEY);
+    } catch { /* private mode — the session simply won't persist */ }
+  },
+};
+
 /** A failed API call, carrying enough for the UI to explain itself. */
 export class ApiError extends Error {
   constructor(message, { status = 0, kind = 'server' } = {}) {
@@ -25,24 +47,37 @@ export class ApiError extends Error {
     //              DNS, or a cold start that outlasted the timeout)
     // 'timeout'  — it reached one, but nothing came back in time
     // 'notready' — the API is up but the corpus is not ingested (503)
+    // 'auth'     — not signed in, or the session expired (401)
+    // 'forbidden'— signed in, but this role may not do that (403)
     // 'server'   — the API answered with an error
     this.kind = kind;
   }
 }
 
 /** Fetch with a timeout — a hung backend must not hang the UI forever. */
-async function req(path, { method = 'GET', body, signal } = {}) {
+async function req(path, { method = 'GET', body, signal, form } = {}) {
   const ctrl = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, TIMEOUT_MS);
   if (signal) signal.addEventListener('abort', () => ctrl.abort(), { once: true });
 
+  const headers = {};
+  // OAuth2's password grant is a form post, not JSON — that is the shape
+  // FastAPI's OAuth2PasswordRequestForm parses, and matching it is what
+  // makes the /docs "Authorize" button work against the same login.
+  if (form !== undefined) headers['Content-Type'] = 'application/x-www-form-urlencoded';
+  else if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const token = auth.token;
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   let res;
   try {
     res = await fetch(BASE + path, {
       method,
-      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
+      body: form !== undefined
+        ? new URLSearchParams(form).toString()
+        : body !== undefined ? JSON.stringify(body) : undefined,
       signal: ctrl.signal,
     });
   } catch (err) {
@@ -65,9 +100,16 @@ async function req(path, { method = 'GET', body, signal } = {}) {
 
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
+    // Drop a token the server has stopped accepting, so the UI shows a
+    // login form instead of retrying a dead session forever.
+    if (res.status === 401) auth.token = null;
+    const kind =
+      res.status === 503 ? 'notready' :
+      res.status === 401 ? 'auth' :
+      res.status === 403 ? 'forbidden' : 'server';
     throw new ApiError(
       detail.detail || `${res.status} ${res.statusText}`,
-      { status: res.status, kind: res.status === 503 ? 'notready' : 'server' },
+      { status: res.status, kind },
     );
   }
   // An empty body is a legitimate answer, not a parse failure.
@@ -78,7 +120,35 @@ async function req(path, { method = 'GET', body, signal } = {}) {
 export const api = {
   corpus: ({ signal } = {}) => req('/corpus', { signal }),
 
-  ask: ({ query, scope, classification, complianceFacts, topK = 5, signal }) =>
+  // --- read-only views over what the pipeline already produced -----------
+  corpusDocuments: ({ signal } = {}) => req('/corpus/documents', { signal }),
+  status: ({ signal } = {}) => req('/status', { signal }),
+  evidence: (auditId, { signal } = {}) =>
+    req(`/evidence/${encodeURIComponent(auditId)}`, { signal }),
+  assess: ({ classification, facts, signal }) =>
+    req('/assess', {
+      method: 'POST',
+      signal,
+      body: {
+        classification: classification && Object.values(classification).some(Boolean)
+          ? classification : null,
+        facts: facts && Object.keys(facts).length ? facts : null,
+      },
+    }),
+
+  // --- operator session --------------------------------------------------
+  login: async (username, password) => {
+    const data = await req('/auth/login', {
+      method: 'POST',
+      form: { username, password, grant_type: 'password' },
+    });
+    auth.token = data.access_token;
+    return data;
+  },
+  me: ({ signal } = {}) => req('/auth/me', { signal }),
+  logout: () => { auth.token = null; },
+
+  ask: ({ query, scope, classification, complianceFacts, language, topK = 5, signal }) =>
     req('/query', {
       method: 'POST',
       signal,
@@ -86,6 +156,11 @@ export const api = {
         query,
         top_k: topK,
         scope,
+        // null means "work it out from the query text". The backend's
+        // detector is a Unicode-script heuristic, so an explicit choice
+        // from the header picker is strictly better information — but only
+        // when the user actually made one.
+        language: language || null,
         classification: classification && Object.values(classification).some(Boolean)
           ? classification : null,
         compliance_facts: complianceFacts && Object.keys(complianceFacts).length
@@ -113,6 +188,9 @@ export const api = {
   reviewHistory: ({ signal } = {}) => req('/updates/history', { signal }),
   reviewNeedsAudit: ({ signal } = {}) => req('/updates/needs-audit', { signal }),
   reviewCheckNow: () => req('/updates/check-now', { method: 'POST', body: {} }),
+  // The decision body carries notes only. Who decided comes from the
+  // bearer token server-side and cannot be set from here — see
+  // backend/app/auth.py.
   reviewApprove: (id, decision) => req(`/updates/${id}/approve`, { method: 'POST', body: decision }),
   reviewReject: (id, decision) => req(`/updates/${id}/reject`, { method: 'POST', body: decision }),
   reviewClearAudit: (id, decision) => req(`/updates/${id}/clear-audit`, { method: 'POST', body: decision }),
@@ -166,4 +244,22 @@ export const CULTIVATION = [
   { value: 'cultivated', label: 'Cultivated' },
   { value: 'wild_collected', label: 'Wild-collected' },
   { value: 'mixed', label: 'Both' },
+];
+
+/**
+ * The answer language.
+ *
+ * `null` means "detect it from the query text" — the backend falls back to
+ * a Unicode-script heuristic (Devanagari, Kannada, ...) when no explicit
+ * language is sent. That heuristic is the default rather than the only
+ * option because it cannot tell Hindi from Marathi, and a picker can.
+ *
+ * Translation only actually happens when a Bhashini backend is configured;
+ * without one the answer comes back in English with `translated: false`,
+ * and the UI says so rather than pretending the choice took effect.
+ */
+export const LANGUAGES = [
+  { value: null, label: 'EN', name: 'English' },
+  { value: 'hi', label: 'हिन्दी', name: 'Hindi' },
+  { value: 'kn', label: 'ಕನ್ನಡ', name: 'Kannada' },
 ];

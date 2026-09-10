@@ -1,35 +1,52 @@
 import { Link } from 'react-router-dom';
 import { Scale, Shield, Doc, Leaf, Check, Search, Flask, Pin } from '../components/Icons.jsx';
-import { Badge, Disclaimer } from '../components/Bits.jsx';
+import { Badge, Disclaimer, Stat } from '../components/Bits.jsx';
 import { useCorpus } from '../App.jsx';
 
 /* The landing page carries the "understood by everyone" load: a vaidya or a
    small manufacturer arrives here not knowing what ABS is, or that section
    3(p) exists. Plain language first, terms of art introduced afterward. */
 
+/* Four capabilities, one pipeline. Each is backed by a module that actually
+   exists — nothing is listed here that the system cannot do, because a
+   landing page claim is the cheapest possible thing to falsify and the most
+   expensive to be caught on. */
 const PILLARS = [
   {
-    icon: <Scale size={22} />,
-    title: 'Answers you can check',
-    body: 'Every answer names the Act and the section it came from, with the exact text beside it. When the law doesn’t clearly cover your question, it says so instead of guessing.',
+    icon: <Flask size={22} />,
+    title: 'Product classification',
+    body: 'Say what your formulation is — classical, proprietary, phytopharmaceutical, food, cosmetic — and the system works out which regulatory regimes govern it before anything else runs.',
+    code: 'ai/compliance · ai/shared/taxonomy.py',
+    to: '/assess',
   },
   {
     icon: <Shield size={22} />,
-    title: 'Compliance you didn’t know to ask about',
-    body: 'Using an Indian plant in your formulation can require National Biodiversity Authority approval before a patent is granted. That check runs on every question — you don’t have to know it exists.',
+    title: 'IP & regulatory mapping',
+    body: 'A knowledge graph resolves which duties your specific facts trigger, which exemptions remove them, in what order they fall due, and which provision each one rests on.',
+    code: 'ai/knowledge_graph · ai/patent_prep',
+    to: '/cases',
+  },
+  {
+    icon: <Scale size={22} />,
+    title: 'Source-grounded retrieval',
+    body: 'Answers are composed only from ingested statute text, filtered to your jurisdiction before ranking. Too weak a match produces an abstention rather than a confident guess.',
+    code: 'ai/store.py · ai/embedder.py',
+    to: '/sources',
   },
   {
     icon: <Doc size={22} />,
-    title: 'From question to filing',
-    body: 'Turn a case into structured intake, prior-art and biodiversity pre-checks, draft form content and tracked deadlines — ready to hand to a registered patent agent.',
+    title: 'Explainable guidance',
+    body: 'Every answer carries the passages behind it, how closely each matched, whether each citation is actually supported by them, and an audit id you can look up afterwards.',
+    code: 'ai/audit.py · citation validation',
+    to: '/evidence',
   },
 ];
 
 const STEPS = [
-  { n: '1', t: 'Pick the law that applies', d: 'India, international frameworks, or both. The choice filters the search itself — a treaty can never be quoted at you as if it were Indian law, and “both” is answered twice, separately.' },
-  { n: '2', t: 'The law is retrieved', d: 'Your question is matched against ingested statutes, rules and treaties — filtered to the jurisdiction you picked, and to your formulation type, before anything is searched.' },
-  { n: '3', t: 'Obligations are screened', d: 'A regulatory knowledge graph works out which duties apply to your specific facts, which exemptions remove them, and in what order they fall due.' },
-  { n: '4', t: 'You get a cited answer', d: 'With the sections quoted, a confidence reading, and an honest list of what the system still needs to know before it can be sure.' },
+  { n: '01', t: 'Pick the law that applies', d: 'India, international frameworks, or both. The choice filters the search itself — a treaty can never be quoted at you as if it were Indian law, and “both” is answered twice, separately.' },
+  { n: '02', t: 'The law is retrieved', d: 'Your question is matched against ingested statutes, rules and treaties — filtered to the jurisdiction you picked, and to your formulation type, before anything is searched.' },
+  { n: '03', t: 'Obligations are screened', d: 'A regulatory knowledge graph works out which duties apply to your specific facts, which exemptions remove them, and in what order they fall due.' },
+  { n: '04', t: 'You get a cited answer', d: 'With the sections quoted, a confidence reading, and an honest list of what the system still needs to know before it can be sure.' },
 ];
 
 export default function Home() {
@@ -42,9 +59,9 @@ export default function Home() {
      its citations are real, a stale figure is the wrong thing to fake. Until
      the count arrives, the tile shows a dash rather than a placeholder. */
   const STATS = [
-    [corpus ? corpus.chunks.toLocaleString() : '—', 'passages of law indexed'],
-    [j ? j.india?.toLocaleString() ?? '0' : '—', 'from Indian instruments'],
-    [j ? j.international?.toLocaleString() ?? '0' : '—', 'from international ones'],
+    [corpus ? corpus.chunks.toLocaleString() : null, 'passages of law indexed'],
+    [j ? j.india?.toLocaleString() ?? '0' : null, 'from Indian instruments'],
+    [j ? j.international?.toLocaleString() ?? '0' : null, 'from international ones'],
     ['3(p)', 'the section most applicants miss'],
   ];
 
@@ -53,7 +70,7 @@ export default function Home() {
       <section className="shell hero">
         <div className="hero-grid">
           <div className="rise">
-            <span className="eyebrow">Ayurveda · Intellectual property · Regulatory compliance</span>
+            <span className="hero-badge">Smart India Hackathon 2026 · Working prototype</span>
             <h1 style={{ marginTop: 14 }}>
               Know where your formulation stands — <em>before</em> you file.
             </h1>
@@ -64,18 +81,17 @@ export default function Home() {
               after a refusal.
             </p>
             <div className="hero-cta">
-              <Link to="/ask" className="btn btn-primary">
-                <Search size={18} /> Ask a question
+              <Link to="/assess" className="btn btn-primary">
+                <Shield size={18} /> Assess my product
               </Link>
-              <Link to="/cases" className="btn btn-ghost">See a worked case</Link>
+              <Link to="/ask" className="btn btn-ghost">
+                <Search size={18} /> Ask IP-SAKTI
+              </Link>
             </div>
-            <div className="row-wrap" style={{ marginTop: 24, gap: 14 }}>
-              {['India and international law', 'Cited to section level', 'Abstains when unsure'].map(t => (
-                <span key={t} className="row faint" style={{ fontSize: 13.6, gap: 7 }}>
-                  <Check size={15} style={{ color: 'var(--ok)' }} /> {t}
-                </span>
-              ))}
-            </div>
+            <p className="trust-line">
+              Evidence-grounded · Citation-first · Confidence-aware ·{' '}
+              <span className="faint">Information support, not legal advice.</span>
+            </p>
           </div>
 
           {/* A miniature of a real answer — shows the product in one glance. */}
@@ -108,36 +124,52 @@ export default function Home() {
 
       <section className="shell">
         <div className="stat-strip">
-          {STATS.map(([n, l]) => (
-            <div className="stat" key={l}>
-              <div className="stat-n">{n}</div>
-              <div className="stat-l">{l}</div>
-            </div>
-          ))}
+          {STATS.map(([n, l]) => <Stat key={l} value={n} label={l} />)}
         </div>
       </section>
 
       <section className="shell section">
         <div className="section-head">
-          <h2>Built for the person who doesn’t have a patent lawyer yet</h2>
+          <h2>Four capabilities, one pipeline</h2>
           <p>
-            A practitioner, a small manufacturer, a research collective. The system assumes you know
-            your formulation — not the statute book.
+            Built for the practitioner, small manufacturer or research collective who knows their
+            formulation but not the statute book. Each capability below is one stage of the same
+            run — not four separate tools bolted together.
           </p>
         </div>
-        <div className="features">
+        <div className="features features-4">
           {PILLARS.map((p, i) => (
-            <div className="feature rise" key={p.title} style={{ animationDelay: `${i * 70}ms` }}>
+            <Link
+              to={p.to}
+              className="feature feature-link rise"
+              key={p.title}
+              style={{ animationDelay: `${i * 70}ms` }}
+            >
               <div className="feature-ico">{p.icon}</div>
               <h3>{p.title}</h3>
               <p>{p.body}</p>
-            </div>
+              {/* Naming the module is not decoration: it is the claim that
+                  this capability is a thing you can go and read, rather
+                  than a line of copy. */}
+              <span className="mono faint feature-code">{p.code}</span>
+            </Link>
           ))}
         </div>
       </section>
 
       <section className="shell section">
-        <div className="section-head">
+        <div className="principle">
+          <h2 className="principle-h">The model doesn’t invent the law.</h2>
+          <p className="principle-p">
+            It retrieves the law and explains it. Every guardrail in this system follows from that
+            one decision — the jurisdiction filter that runs before ranking, the threshold below
+            which it abstains, the check that every citation is actually supported by a retrieved
+            passage, the audit trail behind each answer.
+          </p>
+          <Link to="/about" className="btn btn-ghost btn-sm">How it works</Link>
+        </div>
+
+        <div className="section-head" style={{ marginTop: 40 }}>
           <h2>How an answer is put together</h2>
           <p>Four steps, and you can inspect the evidence at every one of them.</p>
         </div>
@@ -191,7 +223,7 @@ export default function Home() {
       <section className="shell section">
         <div style={{
           borderRadius: 'var(--r-xl)', padding: '44px 36px', textAlign: 'center',
-          background: 'linear-gradient(150deg, var(--green-700), var(--green-900))',
+          background: 'linear-gradient(150deg, var(--navy-700), var(--navy-900))',
           boxShadow: 'var(--shadow-lg)', color: '#fff',
         }}>
           <Leaf size={34} style={{ color: 'var(--turmeric-400)', marginBottom: 14 }} />
@@ -201,9 +233,14 @@ export default function Home() {
           <p style={{ color: 'rgba(255,255,255,.82)', maxWidth: '52ch', margin: '0 auto 26px', fontSize: 16.5, lineHeight: 1.6 }}>
             No account, no jargon. Ask in plain words and see exactly which law the answer rests on.
           </p>
-          <Link to="/ask" className="btn btn-accent">
-            <Search size={18} /> Ask a question
-          </Link>
+          <div className="row-wrap" style={{ gap: 12, justifyContent: 'center' }}>
+            <Link to="/ask" className="btn btn-accent">
+              <Search size={18} /> Ask a question
+            </Link>
+            <Link to="/sources" className="btn btn-onbrand">
+              <Doc size={18} /> See the sources first
+            </Link>
+          </div>
         </div>
       </section>
     </>

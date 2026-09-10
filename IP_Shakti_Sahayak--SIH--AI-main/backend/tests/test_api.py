@@ -7,8 +7,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.main import app
 from app.api import routes
+from app.auth import Identity, auth_service
 
 client = TestClient(app)
+
+
+def auth_headers(role: str = "REVIEWER", username: str = "test-reviewer") -> dict[str, str]:
+    """A bearer token for a caller at `role`.
+
+    Issued through the real token path rather than by overriding the
+    dependency, so these tests exercise signing and decoding too — the
+    parts that would let a forged token through if they broke.
+    """
+    account_role = role.upper()
+    auth_service._accounts = dict(auth_service.accounts)
+    from app.auth import Account, hash_password
+
+    auth_service._accounts[username] = Account(username, account_role, hash_password("x"))
+    token, _ = auth_service.issue_token(Identity(username, account_role))
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_health():
@@ -320,15 +337,20 @@ def test_updates_approve_success(monkeypatch):
     class FakeUpdatesService:
         def approve(self, entry_id, *, decided_by, notes=None):
             assert entry_id == "e1"
-            assert decided_by == "reviewer@example.test"
+            # The identity is the authenticated one, never the body.
+            assert decided_by == "test-reviewer"
+            assert notes == "ok"
 
     monkeypatch.setattr(updates_routes, "updates_service", FakeUpdatesService())
     response = client.post(
         "/api/v1/updates/e1/approve",
-        json={"decided_by": "reviewer@example.test", "notes": "ok"},
+        json={"notes": "ok"},
+        headers=auth_headers("REVIEWER"),
     )
     assert response.status_code == 200
-    assert response.json() == {"id": "e1", "status": "approved"}
+    assert response.json() == {
+        "id": "e1", "status": "approved", "decided_by": "test-reviewer",
+    }
 
 
 def test_updates_approve_conflict_returns_409(monkeypatch):
@@ -341,7 +363,7 @@ def test_updates_approve_conflict_returns_409(monkeypatch):
 
     monkeypatch.setattr(updates_routes, "updates_service", FakeUpdatesService())
     response = client.post(
-        "/api/v1/updates/e1/approve", json={"decided_by": "reviewer@example.test"}
+        "/api/v1/updates/e1/approve", json={}, headers=auth_headers("REVIEWER")
     )
     assert response.status_code == 409
 
@@ -354,7 +376,9 @@ def test_updates_publish_missing_entry_returns_404(monkeypatch):
             raise ValueError(f"no review-queue entry {entry_id!r}")
 
     monkeypatch.setattr(updates_routes, "updates_service", FakeUpdatesService())
-    response = client.post("/api/v1/updates/missing/publish")
+    response = client.post(
+        "/api/v1/updates/missing/publish", headers=auth_headers("ADMIN", "test-admin")
+    )
     assert response.status_code == 404
 
 
@@ -369,7 +393,9 @@ def test_updates_check_now_returns_summary(monkeypatch):
             ]}
 
     monkeypatch.setattr(updates_routes, "updates_service", FakeUpdatesService())
-    response = client.post("/api/v1/updates/check-now", json={})
+    response = client.post(
+        "/api/v1/updates/check-now", json={}, headers=auth_headers("ADMIN", "test-admin")
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["checked"] == 2

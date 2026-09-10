@@ -4,6 +4,17 @@ uvicorn[standard]>=0.30,<1.0
 pydantic>=2.7,<3.0
 pydantic-settings>=2.4,<3.0
 
+# Authentication for the reviewer/admin console (app/auth.py). PyJWT and
+# bcrypt are used directly rather than through python-jose and passlib:
+# both wrappers are effectively unmaintained, and passlib 1.7.4 raises
+# against bcrypt 4.x on its own self-test, which turns a working login into
+# a startup crash on a fresh install.
+PyJWT>=2.8,<3.0
+bcrypt>=4.0
+# OAuth2PasswordRequestForm parses a form body, which Starlette will not do
+# without this.
+python-multipart>=0.0.9
+
 # Existing AI/RAG runtime dependencies used by the backend adapter
 pymupdf>=1.24
 chromadb>=0.5

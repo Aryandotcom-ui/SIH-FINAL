@@ -25,6 +25,16 @@ const STATUS_TONE = {
   filed: 'ok', granted: 'ok', rejected: 'stop',
 };
 
+/* The applicable-route questions. Each names the instrument that decides
+   it, so a reader can go and check rather than take the framing on trust. */
+const ROUTES = [
+  { t: 'Patent', q: 'Is there an inventive step over what the classical texts already disclose — and does section 3(p) exclude it as traditional knowledge?', basis: 'Patents Act, 1970 · s.3(p), s.3(e)' },
+  { t: 'Trade mark', q: 'Is the name distinctive, or is it the generic name of the formulation itself?', basis: 'Trade Marks Act, 1999' },
+  { t: 'Design', q: 'Is there a novel shape, configuration or packaging worth protecting separately?', basis: 'Designs Act, 2000' },
+  { t: 'Traditional knowledge', q: 'Is the formulation already recorded in the TKDL, where it will be cited against your application?', basis: 'TKDL · prior-art probe' },
+  { t: 'Biodiversity', q: 'Does the biological material require approval before an IP right can be granted at all?', basis: 'Biological Diversity Act, 2002 · s.6' },
+];
+
 export default function Cases() {
   const [cases, setCases] = useState(null);
   const [error, setError] = useState(null);
@@ -60,20 +70,36 @@ export default function Cases() {
     <div className="shell">
       <div className="row-wrap" style={{ marginBottom: 26, alignItems: 'flex-start', gap: 16 }}>
         <div style={{ flex: 1, minWidth: 280 }}>
-          <span className="eyebrow">Patent cases</span>
+          <span className="eyebrow">IP &amp; regulatory analysis</span>
           <h1 style={{ fontSize: 'clamp(30px, 4vw, 40px)', margin: '10px 0 10px' }}>
-            From intake to your patent agent
+            Which routes are open to you?
           </h1>
           <p className="muted" style={{ fontSize: 16, maxWidth: '66ch' }}>
-            Each case collects the facts once, runs the biodiversity and prior-art pre-checks against
-            them, drafts the form content, and tracks the dates that follow.
+            Patent, trade mark, design, traditional knowledge, biodiversity — each is a question to
+            assess against your facts, not a conclusion to hand you. Open a formal case and it
+            collects those facts once, runs the biodiversity and prior-art pre-checks against them,
+            drafts the form content, and tracks the dates that follow.
           </p>
         </div>
         {cases && (
           <button className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
-            <Plus size={16} /> New case
+            <Plus size={16} /> Start a formal case
           </button>
         )}
+      </div>
+
+      {/* Presented as questions, deliberately. Which right is available
+          turns on facts this page has not been given yet, and a list of
+          confident-looking "you can file X" cards would be exactly the
+          unearned certainty the rest of the product refuses. */}
+      <div className="routes">
+        {ROUTES.map(r => (
+          <div className="route" key={r.t}>
+            <strong className="route-t">{r.t}</strong>
+            <p className="route-q">{r.q}</p>
+            <span className="mono faint route-basis">{r.basis}</span>
+          </div>
+        ))}
       </div>
 
       {creating && (
@@ -350,9 +376,9 @@ function CaseDetail({ c, onChanged }) {
                   <div style={{
                     width: 30, height: 30, borderRadius: '50%', display: 'grid', placeItems: 'center',
                     margin: '0 auto 7px',
-                    background: done ? 'var(--green-700)' : 'var(--bg-sunken)',
+                    background: done ? 'var(--navy-700)' : 'var(--bg-sunken)',
                     color: done ? '#fff' : 'var(--text-faint)',
-                    border: `1px solid ${done ? 'var(--green-700)' : 'var(--border)'}`,
+                    border: `1px solid ${done ? 'var(--navy-700)' : 'var(--border)'}`,
                     transition: 'all 240ms cubic-bezier(.2,.7,.3,1)',
                   }}>
                     {done ? <Check size={15} /> : <span style={{ fontSize: 12.5, fontWeight: 600 }}>{i + 1}</span>}
@@ -362,7 +388,7 @@ function CaseDetail({ c, onChanged }) {
                   </div>
                 </div>
                 {i < STAGES.length - 1 && (
-                  <div style={{ flex: 1, height: 2, background: i < stageIdx ? 'var(--green-700)' : 'var(--border)', margin: '0 6px', marginBottom: 20 }} />
+                  <div style={{ flex: 1, height: 2, background: i < stageIdx ? 'var(--navy-700)' : 'var(--border)', margin: '0 6px', marginBottom: 20 }} />
                 )}
               </div>
             );
