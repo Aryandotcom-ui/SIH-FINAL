@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Chevron, Info, Alert, Plug, Refresh, Globe, Pin } from './Icons.jsx';
-import { SCOPES } from '../lib/api.js';
+import { Chevron, Info, Alert, Plug, Refresh, Globe, Pin, Check } from './Icons.jsx';
+import { SCOPES, LANGUAGES } from '../lib/api.js';
 
 /** Small explanatory tooltip — this product is full of terms of art
  *  (abstention, ABS, TKDL) that a first-time user will not know. */
@@ -134,6 +134,8 @@ export function ErrorState({ error, onRetry, what = 'this' }) {
     offline: 'Can’t reach the API',
     timeout: 'The API didn’t answer in time',
     notready: 'The corpus isn’t ready yet',
+    auth: 'Your session has ended',
+    forbidden: 'Your account can’t do that',
     server: `Couldn’t load ${what}`,
   }[kind];
   const help = {
@@ -151,6 +153,8 @@ export function ErrorState({ error, onRetry, what = 'this' }) {
         <code>./scripts/run.sh --rebuild</code>.
       </>
     ),
+    auth: 'Sign in again to continue. Reviewer sessions end when the browser tab closes.',
+    forbidden: 'You are signed in, but this action needs a higher role. Approving corpus updates needs REVIEWER; publishing them needs ADMIN.',
     server: 'The API answered with an error. The message it gave is below.',
   }[kind];
 
@@ -182,9 +186,9 @@ export function ErrorState({ error, onRetry, what = 'this' }) {
  * count per jurisdiction, so a scope with nothing ingested says so instead of
  * looking merely unhelpful when it returns nothing.
  */
-export function ScopeToggle({ value, onChange, counts, disabled }) {
+export function ScopeToggle({ value, onChange, counts, disabled, compact = false }) {
   return (
-    <div className="scope" role="group" aria-label="Jurisdiction scope">
+    <div className={`scope${compact ? ' scope-compact' : ''}`} role="group" aria-label="Jurisdiction scope">
       {SCOPES.map(sc => {
         const n = sc.jurisdiction
           ? counts?.[sc.jurisdiction]
@@ -220,4 +224,85 @@ export function JurisdictionTag({ jurisdiction }) {
       {intl ? 'International' : 'India'}
     </span>
   );
+}
+
+/**
+ * The answer language.
+ *
+ * Sits beside the jurisdiction toggle because it is the same kind of
+ * control: both decide what the answer *is*, not how it looks. Leaving it
+ * on EN is not the same as forcing English — the backend still detects a
+ * Devanagari or Kannada query and answers in kind. Picking one only removes
+ * the guess, which matters because the detector is a script heuristic and
+ * cannot tell Hindi from Marathi.
+ */
+export function LanguageToggle({ value, onChange }) {
+  return (
+    <div className="lang" role="group" aria-label="Answer language">
+      {LANGUAGES.map(l => (
+        <button
+          key={l.label}
+          type="button"
+          className="lang-opt"
+          aria-pressed={value === l.value}
+          onClick={() => onChange(l.value)}
+          title={
+            l.value === null
+              ? 'English, or the script your question is written in'
+              : `Answer in ${l.name}`
+          }
+        >
+          {l.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A GREEN / AMBER / RED screening result.
+ *
+ * The reason line is not decoration. GREEN here means both that no
+ * obligation fired and that the screening had enough facts to mean it —
+ * "nothing triggered" and "nothing triggered because nobody answered the
+ * question that decides it" are different findings, and only the first is
+ * green. See _screening_status in backend/app/api/insight_routes.py.
+ */
+export function StatusBand({ status, reason }) {
+  const tone = {
+    GREEN: { cls: 'ok', label: 'No obligations triggered' },
+    AMBER: { cls: 'warn', label: 'Obligations or open questions' },
+    RED: { cls: 'stop', label: 'Blocking obligations' },
+    UNKNOWN: { cls: 'neutral', label: 'Could not be screened' },
+  }[status] ?? { cls: 'neutral', label: 'Could not be screened' };
+
+  return (
+    <div className={`band band-${tone.cls}`} role="status">
+      <span className="band-dot" aria-hidden="true" />
+      <div style={{ minWidth: 0 }}>
+        <strong className="band-title">{tone.label}</strong>
+        <p className="band-reason">{reason}</p>
+      </div>
+      <span className="band-tag">{status}</span>
+    </div>
+  );
+}
+
+/** A labelled figure. Shows a dash, never a zero, for a number that has not
+ *  arrived — on a page whose whole claim is that its numbers are real, an
+ *  invented placeholder is the wrong thing to fake. */
+export function Stat({ value, label, hint }) {
+  return (
+    <div className="stat">
+      <div className="stat-n">{value ?? '—'}</div>
+      <div className="stat-l">{label}{hint && <Explain>{hint}</Explain>}</div>
+    </div>
+  );
+}
+
+/** A verified/unverified marker for a single citation. */
+export function VerifyMark({ verified }) {
+  return verified
+    ? <span className="vmark vmark-ok"><Check size={12} /> supported by a retrieved passage</span>
+    : <span className="vmark vmark-no"><Alert size={12} /> not found in the retrieved passages</span>;
 }

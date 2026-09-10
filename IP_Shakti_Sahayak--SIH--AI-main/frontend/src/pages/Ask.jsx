@@ -3,7 +3,8 @@ import {
   api, FORMULATION_TYPES, APPLICANT_CATEGORIES,
   RESOURCE_ORIGINS, CULTIVATION, SCOPES,
 } from '../lib/api.js';
-import { useCorpus, useScope } from '../App.jsx';
+import { Link } from 'react-router-dom';
+import { useCorpus, useScope, useLang } from '../App.jsx';
 import {
   Send, Search, Chevron, Alert, Info, Check, Clock, Globe, Scale, Pin,
 } from '../components/Icons.jsx';
@@ -27,6 +28,7 @@ export default function Ask() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const { scope, setScope } = useScope();
+  const { lang } = useLang();
   const { corpus } = useCorpus();
   const resultRef = useRef(null);
   const taRef = useRef(null);
@@ -68,6 +70,10 @@ export default function Ask() {
         // classification carries only what the facts panel supplies.
         classification: { formulation_type },
         complianceFacts,
+        // From the header picker. Null means "detect it from the query
+        // text" — the backend's script heuristic is the fallback, not the
+        // only path, because it cannot tell Hindi from Marathi.
+        language: lang,
         signal: ctrl.signal,
       });
       setResult({ data, query });
@@ -407,9 +413,22 @@ function Answer({ data }) {
         </Section>
       )}
 
-      <div className="row-wrap faint" style={{ fontSize: 12.6, gap: 14, paddingTop: 4 }}>
-        <span>{data.disclaimer}</span>
-        {data.audit_id && <span className="mono">audit · {data.audit_id}</span>}
+      <div className="answer-foot">
+        <span className="faint" style={{ fontSize: 12.6 }}>{data.disclaimer}</span>
+        <span className="spacer" />
+        {data.audit_id && (
+          <>
+            <span className="mono faint" style={{ fontSize: 12.2 }}>audit · {data.audit_id}</span>
+            {/* The id used to be printed and left there. It is the key to
+                the whole evidence view, so it is a link now. */}
+            <Link
+              to={`/evidence?audit_id=${encodeURIComponent(data.audit_id)}`}
+              className="btn btn-ghost btn-sm"
+            >
+              <Scale size={15} /> View evidence
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );
