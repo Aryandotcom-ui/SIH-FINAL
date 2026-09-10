@@ -187,11 +187,32 @@ export default function About() {
             the same space as the chunks, so switching embedders <em>requires</em> a rebuild.
           </Limit>
 
+          {/* Measured, not asserted. See ai/person_c_generation/eval —
+              this limit exists in the list because the eval suite found
+              it, which is what the eval is for. */}
+          <Limit
+            title="With the offline embedder, abstention does not fire on out-of-scope questions"
+            badge={status?.embedding_is_fallback ? <Badge tone="stop">this deployment</Badge> : null}
+          >
+            The eval suite measures this directly. Over 22 scored questions, the confidence
+            produced for questions the corpus <em>can</em> answer (0.41–0.90) and for questions it
+            cannot (0.48–0.65) overlap completely, so no threshold separates them: asked about GST
+            rates or company incorporation, the system answers rather than abstaining. The
+            abstention machinery is real and works when confidence is genuinely low — it is the
+            TF-IDF similarity signal that fails to distinguish the two cases. Expect this to
+            improve substantially with a neural embedder, which is the configuration this was
+            always meant to run on. Until then, treat an answer on a topic outside Indian IP,
+            biodiversity, drugs, cosmetics or food law as unreliable regardless of the confidence
+            shown beside it.
+          </Limit>
+
           <Limit title="Retrieval is dense-only">
             There is no lexical/BM25 stage and no cross-encoder rerank. The only score reported
             anywhere in this interface is cosine similarity against the question embedding, which
             is the only one the system computes. A rare statutory term the embedding handles
-            poorly has nothing to fall back on.
+            poorly has nothing to fall back on. Measured Recall@5 against the shipped corpus with
+            the offline embedder is 41% — that is, the provision that actually governs a question
+            reaches the answer barely more than half the time.
           </Limit>
 
           <Limit title="Deadlines marked “unverified”">
