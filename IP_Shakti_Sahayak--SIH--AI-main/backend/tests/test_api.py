@@ -34,16 +34,23 @@ def test_corpus_status(monkeypatch):
         def corpus_count(self):
             return 12
 
+        def corpus_jurisdictions(self):
+            return {"india": 9, "international": 3}
+
     monkeypatch.setattr(routes, "ai_service", FakeService())
     response = client.get("/api/v1/corpus")
     assert response.status_code == 200
-    assert response.json() == {"collection": "ip_sakti_corpus", "chunks": 12}
+    assert response.json() == {
+        "collection": "ip_sakti_corpus",
+        "chunks": 12,
+        "jurisdictions": {"india": 9, "international": 3},
+    }
 
 
 def test_query_success(monkeypatch):
     class FakeService:
         def answer(self, query, classification, top_k, compliance_facts=None,
-                   consented_acts=None, language=None):
+                   consented_acts=None, language=None, scope=None):
             assert query == "Can this be patented?"
             assert classification is not None
             assert classification.formulation_type == "classical"
@@ -151,7 +158,7 @@ def test_configured_groq_key_is_forwarded_to_generation(monkeypatch):
 
     captured = {}
 
-    def fake_generate_answer(retrieval, model, mock, api_key=None):
+    def fake_generate_answer(retrieval, model, mock, api_key=None, jurisdiction_label=None):
         captured["api_key"] = api_key
         from ai.shared.schema import FinalAnswer
         return FinalAnswer(
@@ -171,7 +178,7 @@ def test_configured_groq_key_is_forwarded_to_generation(monkeypatch):
 
     monkeypatch.setattr(service_module, "generate_answer", fake_generate_answer)
     monkeypatch.setattr(service_module.settings, "groq_api_key", "test-key")
-    result = FakeService().answer("test", None, 1)
+    result = FakeService().answer("test", None, 1, scope="IN")
 
     assert captured["api_key"] == "test-key"
     assert result["answer_text"] == "ok"
@@ -186,7 +193,7 @@ def test_answer_translates_query_and_answer_for_hindi(monkeypatch):
 
     captured = {}
 
-    def fake_generate_answer(retrieval, model, mock, api_key=None):
+    def fake_generate_answer(retrieval, model, mock, api_key=None, jurisdiction_label=None):
         captured["retrieval_query"] = retrieval.query  # what the LLM saw
         from ai.shared.schema import FinalAnswer
         return FinalAnswer(
@@ -209,7 +216,7 @@ def test_answer_translates_query_and_answer_for_hindi(monkeypatch):
 
     monkeypatch.setattr(service_module, "generate_answer", fake_generate_answer)
     result = FakeService().answer(
-        "क्या यह पेटेंट हो सकता है?", None, 1, language="hi"
+        "क्या यह पेटेंट हो सकता है?", None, 1, language="hi", scope="IN"
     )
 
     assert result["language"] == "hi"
@@ -230,7 +237,7 @@ def test_answer_translates_query_and_answer_for_hindi(monkeypatch):
 def test_answer_english_query_is_untranslated_and_flagged_translated_true(monkeypatch):
     from app.services import ai_service as service_module
 
-    def fake_generate_answer(retrieval, model, mock, api_key=None):
+    def fake_generate_answer(retrieval, model, mock, api_key=None, jurisdiction_label=None):
         from ai.shared.schema import FinalAnswer
         return FinalAnswer(
             answer_text="Yes.", citations=[], confidence=retrieval.confidence,
@@ -249,7 +256,7 @@ def test_answer_english_query_is_untranslated_and_flagged_translated_true(monkey
             return r, {"c1": {"source_url": "https://example.com"}}
 
     monkeypatch.setattr(service_module, "generate_answer", fake_generate_answer)
-    result = FakeService().answer("Can this be patented?", None, 1)
+    result = FakeService().answer("Can this be patented?", None, 1, scope="IN")
 
     assert result["language"] == "en"
     assert result["translated"] is True  # trivial identity, not a degraded case
@@ -263,7 +270,7 @@ def test_query_endpoint_accepts_language_field(monkeypatch):
 
     class FakeService:
         def answer(self, query, classification, top_k, compliance_facts=None,
-                   consented_acts=None, language=None):
+                   consented_acts=None, language=None, scope=None):
             captured["language"] = language
             return {
                 "answer_text": "ok", "citations": [], "confidence": 0.5,
@@ -488,3 +495,233 @@ def test_patent_cases_update_status(monkeypatch):
     )
     assert response.status_code == 200
     assert response.json() == {"id": "case-1", "status": "filed"}
+
+
+# ---------------------------------------------------------------------------
+# Jurisdiction scope — the hard retrieval filter behind the India /
+# International / Both toggle
+# ---------------------------------------------------------------------------
+
+def _scope_service(monkeypatch, captured):
+    """An AIService whose retrieval is recorded rather than run, so a test can
+    assert on what jurisdiction filter each call went out with."""
+    from app.services import ai_service as service_module
+
+    def fake_generate_answer(retrieval, model, mock, api_key=None, jurisdiction_label=None):
+        captured.setdefault("labels", []).append(jurisdiction_label)
+        from ai.shared.schema import FinalAnswer
+        return FinalAnswer(
+            answer_text=f"Answer for {jurisdiction_label}.",
+            citations=[],
+            confidence=retrieval.confidence,
+            abstained=False,
+            disclaimer="This is informational, not legal advice.",
+        )
+
+    class FakeService(service_module.AIService):
+        def retrieve(self, query, classification, top_k):
+            captured.setdefault("jurisdictions", []).append(
+                classification.jurisdiction if classification else None
+            )
+            from ai.person_b_retrieval.schema import MatchedChunk, RetrievalResult
+            chunk = MatchedChunk(
+                chunk_id=f"c-{classification.jurisdiction}", text="source",
+                act_name="Act", section="1",
+                jurisdiction=classification.jurisdiction, similarity_score=0.9,
+            )
+            r = RetrievalResult(query=query, matched_chunks=[chunk],
+                                confidence=0.9, should_abstain=False)
+            return r, {chunk.chunk_id: {"source_url": None}}
+
+    monkeypatch.setattr(service_module, "generate_answer", fake_generate_answer)
+    return FakeService()
+
+
+def test_scope_both_runs_two_separately_filtered_retrievals(monkeypatch):
+    captured = {}
+    result = _scope_service(monkeypatch, captured).answer("q", None, 1, scope="BOTH")
+
+    # Two calls, one per jurisdiction — never one merged call, which is what
+    # would let the two legal systems compete in a single ranking.
+    assert captured["jurisdictions"] == ["india", "international"]
+    assert captured["labels"] == ["India", "International"]
+    assert result["scope"] == "BOTH"
+    assert [a["scope"] for a in result["answers"]] == ["IN", "INTL"]
+    # The flat answer_text carries both, under headings, never run together.
+    assert "India" in result["answer_text"]
+    assert "International" in result["answer_text"]
+
+
+def test_scope_single_filters_to_that_jurisdiction_only(monkeypatch):
+    captured = {}
+    result = _scope_service(monkeypatch, captured).answer("q", None, 1, scope="INTL")
+
+    assert captured["jurisdictions"] == ["international"]
+    assert captured["labels"] == ["International"]
+    assert result["scope"] == "INTL"
+    assert len(result["answers"]) == 1
+    assert result["answer_text"] == "Answer for International."
+
+
+def test_scope_falls_back_to_classification_jurisdiction(monkeypatch):
+    """A caller written before the toggle existed passed the jurisdiction on
+    the classification. Widening those queries to BOTH would change their
+    answers, so an unset scope honours the classification."""
+    from ai.person_b_retrieval.schema import Classification
+
+    captured = {}
+    service = _scope_service(monkeypatch, captured)
+    result = service.answer("q", Classification(jurisdiction="india"), 1)
+
+    assert captured["jurisdictions"] == ["india"]
+    assert result["scope"] == "IN"
+
+
+def test_scope_defaults_to_both_when_nothing_says_otherwise(monkeypatch):
+    captured = {}
+    result = _scope_service(monkeypatch, captured).answer("q", None, 1)
+    assert result["scope"] == "BOTH"
+    assert captured["jurisdictions"] == ["india", "international"]
+
+
+def test_empty_scope_retrieval_names_the_other_scope_instead_of_guessing(monkeypatch):
+    """Low-similarity retrieval inside the selected scope must not be topped
+    up by the model — it must say so and point at the scope that may cover
+    the question."""
+    from app.services import ai_service as service_module
+
+    def exploding_generate_answer(*a, **kw):  # pragma: no cover - must not run
+        raise AssertionError("generation ran despite insufficient retrieval")
+
+    class FakeService(service_module.AIService):
+        def retrieve(self, query, classification, top_k):
+            from ai.person_b_retrieval.schema import RetrievalResult
+            return RetrievalResult(query=query, matched_chunks=[],
+                                   confidence=0.0, should_abstain=True), {}
+
+    monkeypatch.setattr(service_module, "generate_answer", exploding_generate_answer)
+    result = FakeService().answer("budapest treaty deposit", None, 1, scope="IN")
+
+    block = result["answers"][0]
+    assert block["insufficient"] is True
+    assert block["abstained"] is True
+    assert block["generation"] == "none"
+    assert "International" in block["answer_text"]
+    assert result["abstained"] is True
+
+
+def test_query_endpoint_passes_scope_through(monkeypatch):
+    from app.api import routes
+
+    captured = {}
+
+    class FakeService:
+        def answer(self, query, classification, top_k, compliance_facts=None,
+                   consented_acts=None, language=None, scope=None):
+            captured["scope"] = scope
+            return {
+                "answer_text": "ok", "citations": [], "confidence": 0.5,
+                "abstained": False, "disclaimer": "d", "sources": [],
+                "scope": scope or "BOTH", "answers": [],
+            }
+
+    monkeypatch.setattr(routes, "ai_service", FakeService())
+    response = client.post("/api/v1/query", json={"query": "can I patent this?", "scope": "INTL"})
+    assert response.status_code == 200
+    assert captured["scope"] == "INTL"
+    assert response.json()["scope"] == "INTL"
+
+
+def test_query_endpoint_rejects_an_unknown_scope():
+    response = client.post("/api/v1/query", json={"query": "anything at all", "scope": "MARS"})
+    assert response.status_code == 422
+
+
+def test_jurisdiction_rule_is_injected_into_the_prompt():
+    from ai.person_c_generation.generate import build_prompt, jurisdiction_rule
+    from ai.person_b_retrieval.schema import MatchedChunk, RetrievalResult
+
+    retrieval = RetrievalResult(
+        query="q",
+        matched_chunks=[MatchedChunk("c1", "text", "Act", "1", "india", 0.9)],
+        confidence=0.9, should_abstain=False,
+    )
+    template = "{jurisdiction_rule}\nSOURCES:\n{chunks}\nQUESTION:\n{query}"
+
+    prompt = build_prompt(template, retrieval, "India")
+    assert "under India law only" in prompt
+    assert "any other jurisdiction" in prompt
+
+    # No label -> no rule, and no leftover placeholder in the prompt.
+    assert jurisdiction_rule(None) == ""
+    assert "{jurisdiction_rule}" not in build_prompt(template, retrieval)
+
+
+def test_lazy_resources_are_built_once_under_concurrent_requests(monkeypatch):
+    """FastAPI runs sync endpoints in a threadpool, so simultaneous first
+    requests race the lazy initialisation. Chroma does not survive two
+    PersistentClients opening the same directory at once — the symptom is a
+    503 for the first couple of visitors after a cold start and success for
+    everyone after. Build exactly once, however many callers arrive."""
+    import threading
+    from app.services.ai_service import AIService
+
+    service = AIService()
+    builds = []
+    barrier = threading.Barrier(8)
+
+    class SlowStore:
+        def __init__(self):
+            # Widen the window a real constructor leaves open.
+            builds.append(1)
+            threading.Event().wait(0.02)
+
+    monkeypatch.setattr("app.services.ai_service.VectorStore", lambda *a, **k: SlowStore())
+
+    stores = []
+
+    def hit():
+        barrier.wait()
+        stores.append(service.store)
+
+    threads = [threading.Thread(target=hit) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert len(builds) == 1, f"store was constructed {len(builds)} times"
+    assert len({id(s) for s in stores}) == 1, "callers got different store instances"
+
+
+def test_compliance_screening_runs_even_with_no_facts_and_no_classification(monkeypatch):
+    """The ABS screening exists for the applicant who does not know to ask for
+    it, so it must fire on every query — including one that supplied no
+    formulation facts at all. Before the jurisdiction moved onto the scope,
+    the UI always sent jurisdiction="india" and that is what kept this alive;
+    nothing in the request carries it now, so the service has to."""
+    from app.services import ai_service as service_module
+
+    captured = {}
+
+    def fake_generate_answer(retrieval, model, mock, api_key=None, jurisdiction_label=None):
+        from ai.shared.schema import FinalAnswer
+        return FinalAnswer(answer_text="ok", citations=[], confidence=0.9,
+                           abstained=False, disclaimer="d")
+
+    class FakeService(service_module.AIService):
+        def retrieve(self, query, classification, top_k):
+            from ai.person_b_retrieval.schema import MatchedChunk, RetrievalResult
+            chunk = MatchedChunk("c1", "text", "Act", "1", "india", 0.9)
+            return RetrievalResult(query=query, matched_chunks=[chunk],
+                                   confidence=0.9, should_abstain=False), {"c1": {}}
+
+        def compliance(self, classification, facts):
+            captured["jurisdiction"] = classification.jurisdiction if classification else None
+            return {"headline": "screened"}
+
+    monkeypatch.setattr(service_module, "generate_answer", fake_generate_answer)
+    result = FakeService().answer("can I patent this?", None, 1, scope="INTL")
+
+    assert captured["jurisdiction"] == "india"
+    assert result["compliance"] == {"headline": "screened"}

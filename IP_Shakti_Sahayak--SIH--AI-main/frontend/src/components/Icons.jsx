@@ -101,3 +101,30 @@ export const Refresh = ({ size = 18, ...p }) => (
     <path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6" />
   </svg>
 );
+
+export const Plus = ({ size = 18, ...p }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...s} {...p}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const X = ({ size = 18, ...p }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...s} {...p}>
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);
+
+export const Plug = ({ size = 22, ...p }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...s} {...p}>
+    <path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0ZM12 17v5" />
+  </svg>
+);
+
+/** A map pin rather than a flag: a flag glyph renders inconsistently across
+ *  platforms and carries more than the jurisdiction it is standing in for. */
+export const Pin = ({ size = 15, ...p }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...s} {...p}>
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);

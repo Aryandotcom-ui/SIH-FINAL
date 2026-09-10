@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Scale, Shield, Doc, Leaf, Check, Search, Flask, Globe } from '../components/Icons.jsx';
+import { Scale, Shield, Doc, Leaf, Check, Search, Flask, Pin } from '../components/Icons.jsx';
 import { Badge, Disclaimer } from '../components/Bits.jsx';
+import { useCorpus } from '../App.jsx';
 
 /* The landing page carries the "understood by everyone" load: a vaidya or a
    small manufacturer arrives here not knowing what ABS is, or that section
@@ -25,13 +26,28 @@ const PILLARS = [
 ];
 
 const STEPS = [
-  { n: '1', t: 'Ask in your language', d: 'Type your question in Hindi, Tamil, Bengali or any of nine languages. It’s translated for search and the answer comes back in the language you asked in.' },
-  { n: '2', t: 'The law is retrieved', d: 'Your question is matched against ingested statutes, rules and treaties — filtered to your jurisdiction and formulation type before anything is searched.' },
+  { n: '1', t: 'Pick the law that applies', d: 'India, international frameworks, or both. The choice filters the search itself — a treaty can never be quoted at you as if it were Indian law, and “both” is answered twice, separately.' },
+  { n: '2', t: 'The law is retrieved', d: 'Your question is matched against ingested statutes, rules and treaties — filtered to the jurisdiction you picked, and to your formulation type, before anything is searched.' },
   { n: '3', t: 'Obligations are screened', d: 'A regulatory knowledge graph works out which duties apply to your specific facts, which exemptions remove them, and in what order they fall due.' },
   { n: '4', t: 'You get a cited answer', d: 'With the sections quoted, a confidence reading, and an honest list of what the system still needs to know before it can be sure.' },
 ];
 
 export default function Home() {
+  const { corpus } = useCorpus();
+  const j = corpus?.jurisdictions;
+
+  /* The corpus figures come from /api/v1/corpus rather than being written
+     into the page. A number typed into marketing copy drifts from the index
+     the moment a document is added, and on a page whose whole claim is that
+     its citations are real, a stale figure is the wrong thing to fake. Until
+     the count arrives, the tile shows a dash rather than a placeholder. */
+  const STATS = [
+    [corpus ? corpus.chunks.toLocaleString() : '—', 'passages of law indexed'],
+    [j ? j.india?.toLocaleString() ?? '0' : '—', 'from Indian instruments'],
+    [j ? j.international?.toLocaleString() ?? '0' : '—', 'from international ones'],
+    ['3(p)', 'the section most applicants miss'],
+  ];
+
   return (
     <>
       <section className="shell hero">
@@ -43,8 +59,9 @@ export default function Home() {
             </h1>
             <p className="hero-lede">
               Ask a plain question about patenting an Ayurvedic formulation and get an answer grounded in
-              the actual sections of Indian law — along with the biodiversity and disclosure obligations
-              most applicants only discover after a refusal.
+              the actual sections of the law — Indian, international, or both, answered separately —
+              along with the biodiversity and disclosure obligations most applicants only discover
+              after a refusal.
             </p>
             <div className="hero-cta">
               <Link to="/ask" className="btn btn-primary">
@@ -53,7 +70,7 @@ export default function Home() {
               <Link to="/cases" className="btn btn-ghost">See a worked case</Link>
             </div>
             <div className="row-wrap" style={{ marginTop: 24, gap: 14 }}>
-              {['9 Indian languages', 'Cited to section level', 'Abstains when unsure'].map(t => (
+              {['India and international law', 'Cited to section level', 'Abstains when unsure'].map(t => (
                 <span key={t} className="row faint" style={{ fontSize: 13.6, gap: 7 }}>
                   <Check size={15} style={{ color: 'var(--ok)' }} /> {t}
                 </span>
@@ -64,10 +81,10 @@ export default function Home() {
           {/* A miniature of a real answer — shows the product in one glance. */}
           <div className="hero-panel rise" style={{ animationDelay: '90ms' }}>
             <p className="hero-panel-q">
-              “क्या पारंपरिक आयुर्वेदिक फ़ॉर्मूलेशन का पेटेंट कराया जा सकता है?”
+              “Can a traditional Ayurvedic formulation be patented?”
             </p>
             <div className="row" style={{ gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-              <Badge tone="ok">Answered · 83%</Badge>
+              <Badge tone="neutral"><Pin size={12} /> Under Indian law</Badge>
               <Badge tone="stop">2 blocking duties</Badge>
             </div>
             <p style={{ fontSize: 14.6, lineHeight: 1.6, color: 'var(--text-muted)' }}>
@@ -91,12 +108,7 @@ export default function Home() {
 
       <section className="shell">
         <div className="stat-strip">
-          {[
-            ['9', 'languages supported'],
-            ['12', 'instruments in the corpus'],
-            ['14', 'obligations modelled'],
-            ['3(p)', 'the section most applicants miss'],
-          ].map(([n, l]) => (
+          {STATS.map(([n, l]) => (
             <div className="stat" key={l}>
               <div className="stat-n">{n}</div>
               <div className="stat-l">{l}</div>
@@ -187,10 +199,10 @@ export default function Home() {
             Start with the question you actually have.
           </h2>
           <p style={{ color: 'rgba(255,255,255,.82)', maxWidth: '52ch', margin: '0 auto 26px', fontSize: 16.5, lineHeight: 1.6 }}>
-            No account, no jargon. Ask in your own language and see exactly which law the answer rests on.
+            No account, no jargon. Ask in plain words and see exactly which law the answer rests on.
           </p>
           <Link to="/ask" className="btn btn-accent">
-            <Globe size={18} /> Ask in your language
+            <Search size={18} /> Ask a question
           </Link>
         </div>
       </section>

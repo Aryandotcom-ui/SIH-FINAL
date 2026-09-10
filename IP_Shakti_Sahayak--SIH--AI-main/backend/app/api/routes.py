@@ -19,6 +19,7 @@ def corpus_status() -> CorpusResponse:
         return CorpusResponse(
             collection=ai_service.store.collection.name,
             chunks=ai_service.corpus_count(),
+            jurisdictions=ai_service.corpus_jurisdictions(),
         )
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Corpus unavailable: {exc}") from exc
@@ -55,6 +56,7 @@ def query(request: QueryRequest) -> QueryResponse:
             compliance_facts=facts,
             consented_acts=set(request.consent_licensed_acts),
             language=request.language,
+            scope=request.scope,
         )
         return QueryResponse(**result)
     except RuntimeError as exc:

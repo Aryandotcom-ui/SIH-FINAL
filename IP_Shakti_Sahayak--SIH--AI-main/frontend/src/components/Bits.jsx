@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Chevron, Info } from './Icons.jsx';
+import { Chevron, Info, Alert, Plug, Refresh, Globe, Pin } from './Icons.jsx';
+import { SCOPES } from '../lib/api.js';
 
 /** Small explanatory tooltip — this product is full of terms of art
  *  (abstention, ABS, TKDL) that a first-time user will not know. */
@@ -116,5 +117,107 @@ export function Disclaimer({ children }) {
       <Info size={17} style={{ flexShrink: 0, marginTop: 1, color: 'var(--text-faint)' }} />
       <span>{children}</span>
     </div>
+  );
+}
+
+/**
+ * A failed request, said plainly.
+ *
+ * This replaces the sample-data fallback the app used to show. Inventing a
+ * legal answer to cover for an unreachable backend is the exact failure this
+ * project exists to prevent, so an unreachable backend now looks like one —
+ * with the cause named and a retry to hand.
+ */
+export function ErrorState({ error, onRetry, what = 'this' }) {
+  const kind = error?.kind ?? 'server';
+  const title = {
+    offline: 'Can’t reach the API',
+    timeout: 'The API didn’t answer in time',
+    notready: 'The corpus isn’t ready yet',
+    server: `Couldn’t load ${what}`,
+  }[kind];
+  const help = {
+    offline: (
+      <>
+        Nothing is answering at the API address. Start the backend with{' '}
+        <code>./scripts/run.sh</code>, or check that <code>VITE_API_BASE</code>{' '}
+        points at a running service.
+      </>
+    ),
+    timeout: 'A free-tier server sleeps when idle and can take up to a minute to wake. It stays fast once it is up.',
+    notready: (
+      <>
+        The API is running but its search index is missing. Build it with{' '}
+        <code>./scripts/run.sh --rebuild</code>.
+      </>
+    ),
+    server: 'The API answered with an error. The message it gave is below.',
+  }[kind];
+
+  return (
+    <div className="errorstate" role="alert">
+      <div className="errorstate-ico">
+        {kind === 'offline' ? <Plug size={22} /> : <Alert size={22} />}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h3 className="errorstate-title">{title}</h3>
+        <p className="errorstate-help">{help}</p>
+        {error?.message && <p className="errorstate-detail mono">{error.message}</p>}
+      </div>
+      {onRetry && (
+        <button className="btn btn-ghost btn-sm" onClick={onRetry}>
+          <Refresh size={15} /> Try again
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The jurisdiction scope control.
+ *
+ * Deliberately a segmented control rather than a dropdown: which legal system
+ * an answer came from is not a setting to go hunting for, and the selected one
+ * has to be readable at a glance while you type. `counts` is the real corpus
+ * count per jurisdiction, so a scope with nothing ingested says so instead of
+ * looking merely unhelpful when it returns nothing.
+ */
+export function ScopeToggle({ value, onChange, counts, disabled }) {
+  return (
+    <div className="scope" role="group" aria-label="Jurisdiction scope">
+      {SCOPES.map(sc => {
+        const n = sc.jurisdiction
+          ? counts?.[sc.jurisdiction]
+          : Object.values(counts ?? {}).reduce((a, b) => a + b, 0) || undefined;
+        return (
+          <button
+            key={sc.value}
+            type="button"
+            className="scope-opt"
+            aria-pressed={value === sc.value}
+            disabled={disabled}
+            onClick={() => onChange(sc.value)}
+            title={sc.hint}
+          >
+            {sc.value === 'INTL' ? <Globe size={14} /> : sc.value === 'IN' ? <Pin size={14} /> : null}
+            {sc.label}
+            {n != null && <span className="scope-n">{n}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Which legal system a citation belongs to, shown on the citation itself so
+ *  it is never ambiguous even inside a single-jurisdiction answer. */
+export function JurisdictionTag({ jurisdiction }) {
+  if (!jurisdiction) return null;
+  const intl = jurisdiction === 'international';
+  return (
+    <span className={`jtag ${intl ? 'jtag-intl' : 'jtag-in'}`}>
+      {intl ? <Globe size={11} /> : <Pin size={11} />}
+      {intl ? 'International' : 'India'}
+    </span>
   );
 }

@@ -7,6 +7,8 @@ You are answering an Ayurveda intellectual-property question using ONLY the sour
 5. Always end with: "This is informational, not legal advice."
 6. Keep the answer plain-language and concise — assume the reader may not be a lawyer.
 
+{jurisdiction_rule}
+
 SOURCES:
 {chunks}
 
