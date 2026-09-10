@@ -306,3 +306,139 @@ class CaseStatusUpdateRequest(BaseModel):
 class HandoffRequest(BaseModel):
     recipient: str = Field(min_length=1, max_length=200)
     notes: str | None = Field(default=None, max_length=2000)
+
+
+# ---------------------------------------------------------------------------
+# Knowledge Sources, system status, Evidence, Product Assessment
+#
+# These four are read-only views over what the pipeline already produces.
+# None of them introduces a second way to get an answer -- see
+# app/services/ai_service.py.
+# ---------------------------------------------------------------------------
+
+class CorpusDocument(BaseModel):
+    act_name: str | None = None
+    file: str | None = None
+    # "ingested" — the text is in the index and answers can cite it.
+    # "pending"  — the knowledge graph cites this instrument but we do not
+    #              hold the source. An obligation citing it still fires (the
+    #              duty exists in law either way) but is reported as
+    #              uncitable. Shown rather than hidden, because the gap
+    #              between what we reason about and what we can quote is
+    #              exactly what a reader should be able to check.
+    status: str = "unknown"
+    jurisdiction: str | None = None
+    instrument_type: str | None = None
+    effective_date: str | None = None
+    # None means the manifest has no verified public link for this
+    # document. The UI says so; it does not invent one.
+    source_url: str | None = None
+    access: str = "public"
+    chunks: int = 0
+    section_effective_dates: dict[str, str] = Field(default_factory=dict)
+
+
+class CorpusLibraryResponse(BaseModel):
+    documents: list[CorpusDocument] = Field(default_factory=list)
+    total: int = 0
+    ingested: int = 0
+    pending: int = 0
+    # How many ingested documents carry a verifiable official link. Exposed
+    # as a number rather than left implicit so the shortfall is visible in
+    # the product, not only in the README.
+    with_source_url: int = 0
+
+
+class StatusResponse(BaseModel):
+    """What is running, as opposed to what is configured."""
+    model_config = ConfigDict(extra="allow")
+
+    collection: str | None = None
+    chunks: int = 0
+    index_ready: bool = False
+    configured_embedding_model: str | None = None
+    # The embedder is chosen by the artifact sitting beside the index, not
+    # by the configured name — so these two can legitimately differ, and
+    # the difference is worth showing.
+    active_embedding_model: str | None = None
+    embedding_dimension: int | None = None
+    embedding_is_fallback: bool | None = None
+    generation_mode: str = "mock"
+    llm_model: str | None = None
+    translation_configured: bool = False
+    abstain_threshold: float = 0.0
+    default_top_k: int = 5
+    audit_entries: int | None = None
+
+
+class EvidenceChunk(BaseModel):
+    chunk_id: str | None = None
+    act_name: str | None = None
+    section: str | None = None
+    jurisdiction: str | None = None
+    # None means the score was not recorded for this row, which is not the
+    # same claim as a score of zero.
+    similarity_score: float | None = None
+    source_url: str | None = None
+    text: str | None = None
+    # False means the chunk this answer was built on is no longer in the
+    # index — a later re-ingest removed or replaced it.
+    still_in_corpus: bool = True
+
+
+class EvidenceCitation(BaseModel):
+    act_name: str | None = None
+    section: str | None = None
+    source_url: str | None = None
+    # True when the cited provision appears among the chunks actually
+    # retrieved for this answer. A citation that does not is the failure
+    # mode this whole system is built to catch, so it is counted, not
+    # assumed away.
+    verified: bool = False
+
+
+class EvidenceResponse(BaseModel):
+    audit_id: str
+    timestamp: str | None = None
+    query_text: str | None = None
+    jurisdiction: str | None = None
+    formulation_type: str | None = None
+    top_k: int | None = None
+    confidence: float | None = None
+    abstained: bool = False
+    abstain_threshold: float = 0.0
+    llm_model: str | None = None
+    error: str | None = None
+    chunks: list[EvidenceChunk] = Field(default_factory=list)
+    citations: list[EvidenceCitation] = Field(default_factory=list)
+    citations_verified: int = 0
+    citations_total: int = 0
+    licensed_acts_withheld: list[str] = Field(default_factory=list)
+    # False means this answer predates per-chunk score recording.
+    detail_recorded: bool = True
+
+
+class AssessmentRequest(BaseModel):
+    """A product screening, without a retrieval question in front of it.
+
+    Same inputs the Ask page collects behind its facts accordion; this
+    gives them their own entry point rather than requiring the user to
+    think of a question first. The screening is the graph-driven
+    compliance layer, which is not retrieval — see
+    ai/compliance/abs.py.
+    """
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    classification: ClassificationRequest | None = None
+    facts: ComplianceFacts | None = None
+
+
+class AssessmentResponse(BaseModel):
+    # Loosely typed for the same reason QueryResponse.compliance is: the
+    # shape belongs to ai/compliance, and adding an obligation field should
+    # not need a coordinated edit here.
+    compliance: dict | None = None
+    # GREEN / AMBER / RED, derived in the route from the report itself —
+    # see app/api/assess_routes.py for exactly what each one means.
+    status: str = "UNKNOWN"
+    status_reason: str = ""
