@@ -21,21 +21,38 @@ up in development. To point at a deployed API instead, set
 | `/cases` | Patent-prep lifecycle: intake → pre-check → drafted forms → agent handoff, with deadline tracking |
 | `/review` | The auto-update review gate: what changed upstream and what needs a human |
 
-## Demo mode
+## No sample-data fallback
 
-Every API call falls back to sample data when the backend is unreachable
-(nothing running, or `/corpus` returning 503 because no corpus has been
-ingested yet). When that happens a **persistent, non-dismissible banner**
-says so.
+Every call goes to the real API. There is no demo mode and no sample-data
+fallback: a fabricated legal answer is the one failure this project exists
+to prevent, and a UI that quietly substitutes invented content for an
+unreachable backend is that failure with a friendlier face.
 
-That banner is not decoration. This product's entire claim is that a
-citation traces to real law — sample content presented as though it were
-retrieved would be precisely the failure the system exists to prevent. If
-you demo this without a backend, leave the banner up.
+When a request fails, `src/lib/api.js` throws an `ApiError` carrying a
+`kind` — `offline`, `timeout`, `notready` (the API is up but the corpus is
+not ingested) or `server` — and the screen renders an `ErrorState` that
+names the cause and offers a retry. Nothing that looks like an answer is
+ever drawn from a failed request.
 
-Sample fixtures live in `src/lib/demo.js` and mirror
-`backend/app/schemas.py` field-for-field, so switching to the live API
-changes nothing in the components.
+## Jurisdiction scope
+
+The India / International / Both control above the composer is a **hard
+filter on retrieval**, not a display option. It decides which chunks are
+eligible before the search runs, and the corpus is already tagged for it:
+`ai/corpus.yaml` gives every document a `jurisdiction`, which `ai/store.py`
+copies onto each chunk's Chroma metadata at ingest.
+
+"Both" is never one merged search. The backend runs two separately filtered
+retrievals and two separate generation calls, and the UI renders them as two
+labelled blocks — so an Indian statute and a treaty can never be stitched
+into one paragraph, and neither can crowd the other out of a single
+similarity ranking. Every citation also carries its own jurisdiction tag, so
+which legal system you are reading is never ambiguous even inside a
+single-scope answer.
+
+The selection is per session (`sessionStorage`), not per message: once set it
+stays until changed. It defaults to "Both" so nobody is forced to pick a
+jurisdiction before they have typed anything.
 
 ## Design notes
 
@@ -55,9 +72,16 @@ changes nothing in the components.
 
 ## Known gaps
 
-- Review-gate and case actions (approve / reject / sign off) are wired to
-  the UI but not yet POSTing — those endpoints need authentication in
-  front of them first.
+- **The review gate and case actions have no authentication in front of
+  them.** Approve / reject / sign off / ingest all POST to the real
+  endpoints, and the reviewer's name is typed into the form rather than
+  taken from a session — so the identity recorded against a decision is
+  only as trustworthy as whoever is sitting at the browser. These
+  endpoints need auth before deployment.
+- **Answers are only as good as the embedder.** The offline TF-IDF
+  stand-in matches wording rather than meaning, so a low-confidence
+  answer on an off-topic question is expected — see the root README's
+  "Known limits".
 - No auth flow; `decided_by` on the backend is unverified free text.
 - Case creation and intake editing aren't built yet; `/cases` reads
   existing cases only.

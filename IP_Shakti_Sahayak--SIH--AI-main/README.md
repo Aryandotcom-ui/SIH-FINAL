@@ -23,10 +23,9 @@ a minute, first run only), and starts the API and the web UI together.
 
 > **Open the URL, not the file.** Double-clicking `frontend/index.html` in a
 > file manager cannot work. The page is compiled by the dev server when it is
-> requested, and a `file://` page has no origin from which to reach the API,
-> so it shows the sample-data banner no matter what else is running. If the
-> banner says the API is unreachable, the backend is not running — start it
-> with the command above.
+> requested, and a `file://` page has no origin from which to reach the API.
+> There is no sample-data fallback: if the UI says it cannot reach the API,
+> the backend is not running — start it with the command above.
 
 Other options:
 
@@ -71,7 +70,7 @@ commit:
 
 **UI — Netlify.** `netlify.toml` sets the build, the publish directory and
 the single-page-app rewrite that makes `/ask` survive a reload. Set one
-build variable, or every page will show the sample-data banner:
+build variable, or every page will report that it cannot reach the API:
 
 | Variable | Value |
 |---|---|
@@ -89,6 +88,30 @@ is not. The UI waits 60s and explains the delay after ten, so a cold start
 reads as "starting" rather than "broken" — but someone clicking during a
 demo still waits. Open the site once a few minutes beforehand.
 
+## Jurisdiction scope
+
+Every question is answered under a jurisdiction you pick: **India**,
+**International**, or **Both**. This is a hard filter on retrieval, not a
+label on the output — it decides which chunks are eligible before the
+search runs.
+
+The corpus is already tagged for it: each document's `jurisdiction` in
+`ai/corpus.yaml` is copied onto every chunk's vector metadata at ingest, so
+the filter is a `where` clause on the index rather than a post-hoc sort.
+
+**"Both" is never one merged search.** It runs two separately filtered
+retrievals and two separate generation calls, each grounded only in its own
+jurisdiction and each told explicitly not to reach outside it — the
+guardrail against the model topping an answer up from training knowledge
+that retrieval deliberately excluded. The two answers are rendered as
+separate labelled blocks, never run together, and every citation carries its
+own jurisdiction tag.
+
+If nothing in the selected jurisdiction matches well enough, the system says
+so and names the other scope rather than generating an ungrounded answer —
+"I don't have India-specific guidance on this in the corpus… try the
+International scope, or Both."
+
 ## What is in the box
 
 | Path | What it does |
@@ -98,7 +121,7 @@ demo still waits. Open the site once a few minutes beforehand.
 | `ai/patent_prep/` | Intake, prior-art precheck, Form 1/3/27 drafts, deadline tracking |
 | `ai/updates/` | Source watcher and tiered review gate for amended law |
 | `ai/audit.py` | DPDP-aligned audit trail and licensed-source citation gate |
-| `ai/translation.py` | Bhashini translation; retrieval always runs on English |
+| `ai/translation.py` | Bhashini translation; retrieval always runs on English. The source language is auto-detected from the query script — there is no language picker in the UI |
 | `backend/` | FastAPI service over the above |
 | `frontend/` | React web UI (Vite), proxied to the API in development |
 | `data/pdfs/` | The 17-document legal corpus (statutes, rules, treaties, guidelines) |

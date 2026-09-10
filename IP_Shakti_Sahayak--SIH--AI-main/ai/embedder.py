@@ -192,6 +192,24 @@ class TfidfEmbedder:
         return self
 
     def save(self, directory) -> None:
+        # Refuse to persist an unfitted vectorizer. An ingest run in which
+        # nothing changed never calls fit() — pipeline.py fits only when
+        # there are dirty chunks — so a caller that saves unconditionally
+        # would overwrite the artifact the index was actually built with,
+        # replacing a fitted space with an empty one. Nothing fails at that
+        # moment: the damage only surfaces at the next query, as a 503 from
+        # _transform()'s guard, long after the run that caused it. Raising
+        # here keeps the failure at the point of the mistake, and keeps the
+        # good artifact on disk.
+        if not self.fitted:
+            raise RuntimeError(
+                "refusing to save an unfitted TfidfEmbedder over the artifact "
+                f"in {directory}. That would replace the vector space the index "
+                "was built with, and every query afterwards would fail. Fit the "
+                "embedder first, or skip the save when an ingest run had nothing "
+                "to embed."
+            )
+
         import joblib
         from pathlib import Path
 

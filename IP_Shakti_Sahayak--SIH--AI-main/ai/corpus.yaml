@@ -337,3 +337,162 @@ documents:
         text: the Regulations carry the time limits, and Rule 159 is what
         pct_national_phase actually turns on.
       priority: medium
+
+  # -------------------------------------------------------------------------
+  # Pending — named here so that WHEN the PDF lands it is tagged correctly
+  # rather than inferred. These entries are inert until the file exists:
+  # load_manifest() keys by filename and the pipeline only looks up files it
+  # actually finds, so listing a document we do not hold costs nothing.
+  #
+  # `jurisdiction` is the field the India / International scope filter
+  # searches on, so it is the one that matters most to get right here.
+  #
+  # A NOTE ON THE TWO-VALUE TAXONOMY. `jurisdiction` is Literal["india",
+  # "international"] across ai/shared/schema.py, ai/person_b_retrieval and
+  # backend/app/schemas.py, and the UI toggle is India / International /
+  # Both. The last two entries below are neither Indian law nor multilateral
+  # instruments — they are US and EU domestic law — and they are tagged
+  # `international` because that is what the toggle's second option means in
+  # this system: "not Indian law". If US and EU ever need to be separable in
+  # their own right, that is a taxonomy change across those three modules
+  # plus the toggle, not a relabelling here. Fetch them with
+  # ./scripts/fetch-corpus.sh, which downloads only what is missing.
+  # -------------------------------------------------------------------------
+  - file: patents-amendment-rules-2024.pdf
+    status: pending
+    jurisdiction: india
+    instrument_type: rule
+    act_name: "The Patents (Amendment) Rules, 2024"
+    effective_date: "2024-03-15"
+    source_url: "https://ipindia.gov.in/writereaddata/Portal/IPORule/1_83_1_Patent_Amendment_Rule_2024_Gazette_Copy.pdf"
+    acquisition:
+      where: "Indian Patent Office (ipindia.gov.in) — Acts & Rules"
+      note: >-
+        Changed the Form 27 working-statement cadence and the
+        request-for-examination window, both of which
+        ai/patent_prep/deadlines.yaml currently marks review_status: draft
+        precisely because they were not confirmed against this text. VERIFY
+        the commencement date above from the gazette copy before ingesting.
+      priority: critical
+
+  - file: designs-act-2000.pdf
+    status: pending
+    jurisdiction: india
+    instrument_type: statute
+    act_name: "The Designs Act, 2000"
+    source_url: ""
+    acquisition:
+      where: "India Code (indiacode.nic.in)"
+      note: >-
+        The registered-design route, which is often the right answer for the
+        packaging or dosage form of an Ayurvedic product barred under
+        section 3(p). Read the effective_date off the Act itself.
+      priority: medium
+
+  - file: copyright-act-1957.pdf
+    status: pending
+    jurisdiction: india
+    instrument_type: statute
+    act_name: "The Copyright Act, 1957"
+    source_url: ""
+    acquisition:
+      where: "India Code (indiacode.nic.in)"
+      note: >-
+        Relevant to compiled formularies and printed matter rather than to
+        formulations themselves. Lower priority than the rest of this block.
+      priority: low
+
+  - file: trips-agreement-1994.pdf
+    status: pending
+    jurisdiction: international
+    instrument_type: treaty
+    act_name: "Agreement on Trade-Related Aspects of Intellectual Property Rights"
+    source_url: ""
+    acquisition:
+      where: "WTO (wto.org/english/docs_e/legal_e)"
+      note: >-
+        Article 27(3)(b) is the hook the Patents Act's section 3(p)
+        exclusions sit against, and Article 29 the disclosure duty. The most
+        load-bearing international instrument still missing.
+      priority: high
+
+  - file: convention-on-biological-diversity-1992.pdf
+    status: pending
+    jurisdiction: international
+    instrument_type: treaty
+    act_name: "Convention on Biological Diversity, 1992"
+    source_url: ""
+    acquisition:
+      where: "CBD Secretariat (cbd.int/convention/text)"
+      note: >-
+        The parent instrument the Nagoya Protocol sits under and the
+        Biological Diversity Act implements. Articles 8(j) and 15 are what
+        the ABS obligations ultimately trace to.
+      priority: high
+
+  - file: madrid-protocol-1989.pdf
+    status: pending
+    jurisdiction: international
+    instrument_type: treaty
+    act_name: "Protocol Relating to the Madrid Agreement Concerning the International Registration of Marks"
+    source_url: ""
+    acquisition:
+      where: "WIPO (wipo.int/wipolex)"
+      note: "International trade-mark filing route. Pairs with the Trade Marks Act, 1999 entry above."
+      priority: low
+
+  - file: hague-agreement-1999.pdf
+    status: pending
+    jurisdiction: international
+    instrument_type: treaty
+    act_name: "Hague Agreement Concerning the International Registration of Industrial Designs"
+    source_url: ""
+    acquisition:
+      where: "WIPO (wipo.int/wipolex)"
+      note: "International design filing route. Only useful alongside the Designs Act, 2000 entry above."
+      priority: low
+
+  - file: budapest-treaty-1977.pdf
+    status: pending
+    jurisdiction: international
+    instrument_type: treaty
+    act_name: "Budapest Treaty on the International Recognition of the Deposit of Microorganisms for the Purposes of Patent Procedure"
+    source_url: ""
+    acquisition:
+      where: "WIPO (wipo.int/wipolex)"
+      note: >-
+        Deposit requirements for a microbial source organism — reachable
+        through ClassificationRequest.source_organism = "microbial", which
+        the API already accepts and the corpus cannot currently answer for.
+      priority: medium
+
+  - file: eu-directive-2004-24-ec-thmpd.pdf
+    status: pending
+    jurisdiction: international
+    instrument_type: statute
+    act_name: "Directive 2004/24/EC on Traditional Herbal Medicinal Products"
+    effective_date: "2004-04-30"
+    source_url: ""
+    acquisition:
+      where: "EUR-Lex (eur-lex.europa.eu, CELEX 32004L0024)"
+      note: >-
+        EU domestic law, tagged `international` per the taxonomy note at the
+        top of this block. The registration route for a traditional herbal
+        product sold into the EU — the outbound case for an Indian
+        manufacturer, which nothing in the corpus currently covers.
+      priority: medium
+
+  - file: fda-botanical-drug-development-guidance-2016.pdf
+    status: pending
+    jurisdiction: international
+    instrument_type: guideline
+    act_name: "FDA Botanical Drug Development Guidance for Industry, 2016"
+    effective_date: "2016-12-01"
+    source_url: ""
+    acquisition:
+      where: "US FDA (fda.gov) — Guidance Documents"
+      note: >-
+        US domestic guidance, tagged `international` per the taxonomy note
+        at the top of this block. It is guidance, not law: instrument_type
+        is `guideline` so an answer never gives it the force of a statute.
+      priority: medium
