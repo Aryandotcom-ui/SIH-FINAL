@@ -128,7 +128,7 @@ export default function About() {
             {
               icon: <Scale size={20} />,
               t: 'Abstention over fluency',
-              d: 'When retrieval is too weak, the answer is an explicit “I can’t tell from the corpus” rather than a confident paragraph built on nothing. This is the behaviour most often mistaken for a bug, and it is the single feature most worth keeping.',
+              d: 'When confidence falls below the threshold, the answer is an explicit “I can’t tell from the corpus” rather than a confident paragraph built on nothing. It is the behaviour most often mistaken for a bug and the one most worth keeping — but see the known limits below for how well the current embedder actually gets confidence low enough to trigger it.',
             },
             {
               icon: <Shield size={20} />,
