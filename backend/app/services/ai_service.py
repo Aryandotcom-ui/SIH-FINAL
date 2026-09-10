@@ -13,7 +13,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from ai.embedder import Embedder, get_embedder  # noqa: E402
-from ai.person_b_retrieval.confidence import compute_confidence, decide_abstain  # noqa: E402
+from ai.person_b_retrieval.confidence import compute_confidence  # noqa: E402
 from ai.person_b_retrieval.schema import (  # noqa: E402
     Classification,
     MatchedChunk,
@@ -217,9 +217,10 @@ class AIService:
             )
             for item in result["matches"]
         ]
-        confidence = compute_confidence(matched)
-        should_abstain = decide_abstain(
-            confidence, matched, threshold=settings.abstain_threshold
+        confidence, should_abstain = compute_confidence(
+            query=query,
+            matched_chunks=matched,
+            threshold=settings.abstain_threshold,
         )
 
         retrieval = RetrievalResult(

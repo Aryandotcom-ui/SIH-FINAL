@@ -65,9 +65,11 @@ if [ "$REBUILD" = 1 ]; then
   rm -rf data/chroma data/registry.sqlite3
 fi
 
-if [ ! -f data/chroma/tfidf-vectorizer.joblib ]; then
-  say "Building the search index from data/pdfs (about a minute)"
-  "$PY" -m ai.cli data/pdfs --manifest ai/corpus.yaml --model tfidf \
+EMBEDDING_MODEL="${EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}"
+
+if [ ! -f data/chroma/chroma.sqlite3 ]; then
+  say "Building the search index from data/pdfs with $EMBEDDING_MODEL (about a minute)"
+  "$PY" -m ai.cli data/pdfs --manifest ai/corpus.yaml --model "$EMBEDDING_MODEL" \
     || die "index build failed — see the log above"
 else
   say "Search index already built (delete data/chroma or pass --rebuild to redo it)"
