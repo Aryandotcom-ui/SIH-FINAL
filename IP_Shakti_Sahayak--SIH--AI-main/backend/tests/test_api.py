@@ -725,3 +725,90 @@ def test_compliance_screening_runs_even_with_no_facts_and_no_classification(monk
 
     assert captured["jurisdiction"] == "india"
     assert result["compliance"] == {"headline": "screened"}
+
+
+def _scope_filter_service(monkeypatch, *, total, per_scope, values=None):
+    """An AIService whose corpus counts are dictated by the test.
+
+    The guard under test reads only these three, so stubbing them keeps the
+    case about the counts rather than about standing up a real index.
+    """
+    from app.services import ai_service as service_module
+
+    class FakeService(service_module.AIService):
+        def corpus_count(self):
+            return total
+
+        def corpus_jurisdictions(self):
+            return dict(per_scope)
+
+        def corpus_jurisdiction_values(self, sample=2000):
+            return dict(values or {})
+
+        def retrieve(self, query, classification, top_k):
+            from ai.person_b_retrieval.schema import MatchedChunk, RetrievalResult
+            chunk = MatchedChunk("c1", "text", "Act", "1", "india", 0.9)
+            return RetrievalResult(query=query, matched_chunks=[chunk],
+                                   confidence=0.9, should_abstain=False), {"c1": {}}
+
+    def fake_generate_answer(retrieval, model, mock, api_key=None, jurisdiction_label=None):
+        from ai.shared.schema import FinalAnswer
+        return FinalAnswer(answer_text="ok", citations=[], confidence=0.9,
+                           abstained=False, disclaimer="d")
+
+    monkeypatch.setattr(service_module, "generate_answer", fake_generate_answer)
+    return FakeService()
+
+
+def test_mistagged_corpus_is_reported_not_answered_as_zero_confidence(monkeypatch):
+    """A populated index whose chunks carry jurisdiction values the scope
+    filter does not use matches nothing, and nothing scores 0.0 — so every
+    query on every scope would come back as a confident-looking "0%
+    confidence, cannot answer". That is a broken index wearing the costume
+    of a settled answer, so it has to surface as a failure instead."""
+    import pytest
+
+    service = _scope_filter_service(
+        monkeypatch,
+        total=60,
+        per_scope={"india": 0, "international": 0},
+        values={"'India'": 30, "'International'": 30},
+    )
+
+    with pytest.raises(RuntimeError) as excinfo:
+        service.answer("what is section 3(d)?", None, 3, scope="BOTH")
+
+    message = str(excinfo.value)
+    assert "60 chunks" in message
+    # Names what is actually in the index, which is what makes it fixable.
+    assert "'India'" in message
+    assert "./scripts/run.sh --rebuild" in message
+
+
+def test_one_empty_scope_stays_graceful_when_its_sibling_has_corpus(monkeypatch):
+    """Only raise when NOTHING the query targets is reachable. A scope that
+    is empty beside a populated one is the ordinary thin-corpus case, and
+    the per-scope `insufficient` path already handles it by naming the other
+    scope — turning that into a 503 would break a working query."""
+    service = _scope_filter_service(
+        monkeypatch,
+        total=60,
+        per_scope={"india": 60, "international": 0},
+    )
+
+    result = service.answer("what is section 3(d)?", None, 3, scope="BOTH")
+    assert result["confidence"] > 0
+
+
+def test_uncountable_jurisdiction_never_reads_as_a_mistagged_corpus(monkeypatch):
+    """corpus_jurisdictions() drops a key it could not count rather than
+    reporting 0. A transient Chroma error must not be mistaken for a corpus
+    tagged with the wrong values."""
+    service = _scope_filter_service(
+        monkeypatch,
+        total=60,
+        per_scope={},  # both counts failed
+    )
+
+    result = service.answer("what is section 3(d)?", None, 3, scope="BOTH")
+    assert result["confidence"] > 0

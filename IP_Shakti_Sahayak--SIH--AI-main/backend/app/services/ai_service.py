@@ -146,6 +146,29 @@ class AIService:
                 )
         return counts
 
+    def corpus_jurisdiction_values(self, sample: int = 2000) -> dict[str, int]:
+        """The `jurisdiction` values actually present in the index, counted.
+
+        corpus_jurisdictions() answers "how much does each scope have?", and
+        so can only ever report the two values the scope filter looks for.
+        This answers the different question a mis-tagged index raises —
+        "then what IS in there?" — which is what turns a metadata mismatch
+        from visible into diagnosable. Samples rather than scans: it exists
+        to fill in an error message, and an exact count of a value that
+        should not be there buys nothing over knowing that it is there.
+        """
+        try:
+            got = self.store.collection.get(limit=sample, include=["metadatas"])
+        except Exception:  # pragma: no cover - defensive
+            logging.getLogger(__name__).exception("could not sample jurisdictions")
+            return {}
+        counts: dict[str, int] = {}
+        for meta in got.get("metadatas") or []:
+            value = (meta or {}).get("jurisdiction")
+            key = "<missing>" if value is None else repr(value)
+            counts[key] = counts.get(key, 0) + 1
+        return counts
+
     def retrieve(
         self,
         query: str,
@@ -398,6 +421,44 @@ class AIService:
         # where one crowds the other out or the two get stitched into a
         # single incoherent paragraph across two legal systems.
         targets = ["IN", "INTL"] if resolved_scope == "BOTH" else [resolved_scope]
+
+        # Retrieval filters on jurisdiction BEFORE ranking, so an index whose
+        # chunks are not tagged with these exact values has nothing eligible
+        # to return: no chunks scores 0.0, 0.0 is below the abstain
+        # threshold, and every question on every scope comes back as a
+        # confident-looking "0% confidence, I can't answer that". A broken
+        # index reported as a settled I-don't-know is precisely the failure
+        # this project exists to prevent, so say what is actually wrong.
+        #
+        # Only raise when the collection HAS content and none of it is
+        # reachable through the scopes asked for. Two cases stay off this
+        # path deliberately: an empty collection (nothing is ingested yet —
+        # already a 503 from the embedder/corpus guards, and not a metadata
+        # fault), and a scope that is empty while its sibling has content,
+        # which the `insufficient` path below handles gracefully by naming
+        # the other scope. A count that could not be taken leaves its key
+        # absent rather than reading as 0, so a transient Chroma error can
+        # never masquerade as a mis-tagged corpus.
+        targeted = [SCOPE_JURISDICTION[t] for t in targets]
+        counted = self.corpus_jurisdictions()
+        if (
+            self.corpus_count() > 0
+            and all(j in counted for j in targeted)
+            and all(counted[j] == 0 for j in targeted)
+        ):
+            present = self.corpus_jurisdiction_values()
+            raise RuntimeError(
+                f"the index holds {self.corpus_count()} chunks, but none are "
+                f"tagged with the jurisdiction(s) this scope searches "
+                f"({', '.join(targeted)}). The jurisdiction values actually in "
+                f"the index are: {present or 'none readable'}. Retrieval filters "
+                "on jurisdiction before ranking, so nothing can match and every "
+                "query would report 0% confidence. Either nothing for this "
+                "jurisdiction has been ingested yet, or the index predates the "
+                "jurisdiction scope and is tagged with different values. Check "
+                "the values above against ai/corpus.yaml, then rebuild with: "
+                "./scripts/run.sh --rebuild"
+            )
 
         # Translate to English before retrieval — ai/embedder.py's default
         # model is English-only, so this is what makes retrieval work at
