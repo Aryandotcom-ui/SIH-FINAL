@@ -120,6 +120,11 @@ class ScopedAnswer(BaseModel):
     sources: list[SourceResponse] = Field(default_factory=list)
     confidence: float = Field(ge=0, le=1)
     abstained: bool
+    # False when the active embedder's similarity does not support a
+    # meaningful confidence (the offline TF-IDF stand-in). The number is
+    # still the real score; what is missing is any reason to read it as a
+    # relevance probability. See AIService.confidence_calibrated.
+    confidence_calibrated: bool = True
     generation: str | None = None
     # True when nothing in this jurisdiction matched well enough to answer
     # from. Distinct from a plain abstention only in what the UI can offer:
@@ -155,6 +160,10 @@ class QueryResponse(BaseModel):
     # generated answer is the failure mode this whole project exists to
     # avoid.
     generation: str | None = None
+    # See ScopedAnswer.confidence_calibrated. Reported at both levels so a
+    # caller reading only the flat fields still learns that the confidence
+    # beside them is not a calibrated one.
+    confidence_calibrated: bool = True
     # The language answer_text/disclaimer are in — the request's explicit
     # `language`, or the detected one. See ai/translation.py.
     language: str = "en"

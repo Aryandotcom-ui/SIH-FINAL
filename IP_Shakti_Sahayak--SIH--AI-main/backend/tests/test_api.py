@@ -812,3 +812,30 @@ def test_uncountable_jurisdiction_never_reads_as_a_mistagged_corpus(monkeypatch)
 
     result = service.answer("what is section 3(d)?", None, 3, scope="BOTH")
     assert result["confidence"] > 0
+
+
+def test_tfidf_backend_reports_its_confidence_as_uncalibrated(monkeypatch):
+    """The offline stand-in ranks on shared character n-grams, which orders
+    chunks but does not measure topical relevance — on the real corpus it
+    scored gibberish above genuine legal queries under every normalisation
+    tried. The number still ships (it is the real score), but it must not
+    reach the UI dressed as a calibrated one."""
+    from app.services import ai_service as service_module
+    from ai.embedder import TfidfEmbedder
+
+    service = service_module.AIService()
+    service._embedder = TfidfEmbedder()
+    assert service.confidence_calibrated is False
+
+
+def test_a_backend_that_does_not_declare_itself_is_treated_as_calibrated():
+    """The real embedder is the shipping default; the flag marks the
+    exception rather than making every backend opt in."""
+    from app.services import ai_service as service_module
+
+    class RealishEmbedder:
+        name = "BAAI/bge-small-en-v1.5"
+
+    service = service_module.AIService()
+    service._embedder = RealishEmbedder()
+    assert service.confidence_calibrated is True

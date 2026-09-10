@@ -63,15 +63,22 @@ export function Disclose({ title, meta, children, defaultOpen = false, className
 
 /** Confidence as a visible meter. The number alone means nothing to a
  *  non-specialist, so it is always paired with a plain-language reading. */
-export function Confidence({ value, abstained }) {
+export function Confidence({ value, abstained, calibrated = true }) {
   const pct = Math.round((value ?? 0) * 100);
   const band = abstained ? 'low' : pct >= 70 ? 'high' : pct >= 45 ? 'medium' : 'low';
-  const color = band === 'high' ? 'var(--ok)' : band === 'medium' ? 'var(--warn)' : 'var(--stop)';
-  const note = {
-    high: 'Strong match against the cited sources.',
-    medium: 'Partial match — read the sources before relying on this.',
-    low: 'Too weak to answer from. Treat nothing here as settled.',
-  }[band];
+  // An uncalibrated score is not a weak score, so it does not get a band
+  // colour that implies one. It gets the warning colour and a reading that
+  // says the number cannot be interpreted, because the alternative is a
+  // green 74% that no one should have trusted.
+  const color = !calibrated ? 'var(--warn)'
+    : band === 'high' ? 'var(--ok)' : band === 'medium' ? 'var(--warn)' : 'var(--stop)';
+  const note = !calibrated
+    ? 'Running on the offline stand-in search backend, whose score does not indicate topical relevance — it rates unrelated questions as highly as real ones. Read the cited sources; do not read this number.'
+    : {
+      high: 'Strong match against the cited sources.',
+      medium: 'Partial match — read the sources before relying on this.',
+      low: 'Too weak to answer from. Treat nothing here as settled.',
+    }[band];
 
   return (
     <div className="conf">
@@ -83,7 +90,9 @@ export function Confidence({ value, abstained }) {
             Below the threshold the system abstains instead of guessing.
           </Explain>
         </span>
-        <span className="conf-val" style={{ color }}>{pct}%</span>
+        <span className="conf-val" style={{ color }}>
+          {calibrated ? `${pct}%` : `${pct}% uncalibrated`}
+        </span>
       </div>
       <div className="conf-track">
         <div className="conf-fill" style={{ width: `${Math.max(pct, 2)}%`, background: color }} />

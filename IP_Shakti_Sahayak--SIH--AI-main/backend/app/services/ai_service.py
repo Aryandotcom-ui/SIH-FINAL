@@ -121,6 +121,23 @@ class AIService:
                     )
         return self._translator
 
+    @property
+    def confidence_calibrated(self) -> bool:
+        """Whether the active embedder's similarity supports a confidence
+        that means anything.
+
+        The offline TF-IDF stand-in ranks on shared character n-grams: good
+        enough to order chunks, useless for deciding whether the best one is
+        on topic (see TfidfEmbedder.CALIBRATED). A percentage derived from it
+        looks exactly like a calibrated one in the UI, and the abstention
+        built on it does not fire — so the response carries this and the UI
+        says so, on the same principle that makes `generation` report "mock".
+        An embedder that does not declare itself is assumed calibrated: the
+        real backend is the shipping default, and this flag exists to mark
+        the exception rather than to make every backend opt in.
+        """
+        return bool(getattr(type(self.embedder), "CALIBRATED", True))
+
     def corpus_count(self) -> int:
         return self.store.count()
 
@@ -487,6 +504,7 @@ class AIService:
             # exact-match contract ai/corpus.yaml's header describes.
             answers = []
             translated_all = True
+            calibrated = self.confidence_calibrated
             for part in parts:
                 rendered = translate_answer_from_english(
                     part["final"].answer_text,
@@ -501,6 +519,7 @@ class AIService:
                     "citations": part["citations"],
                     "sources": part["sources"],
                     "confidence": part["final"].confidence,
+                    "confidence_calibrated": calibrated,
                     "abstained": part["final"].abstained,
                     "generation": part["generation"],
                     "insufficient": part["insufficient"],
@@ -576,6 +595,7 @@ class AIService:
                 # the prose is canned, the citations and screening are not),
                 # or "none" (abstained, so no generation happened).
                 "generation": generation,
+                "confidence_calibrated": calibrated,
                 "language": source_language,
                 # False means the text above is still English because no
                 # translation backend is configured or it failed — the

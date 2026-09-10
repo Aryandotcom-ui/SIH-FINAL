@@ -142,6 +142,18 @@ class TfidfEmbedder:
     #: Where the fitted vectorizer is persisted, relative to the Chroma dir.
     ARTIFACT_NAME = "tfidf-vectorizer.joblib"
 
+    #: This backend ranks on shared character n-grams, which is enough to
+    #: order chunks against each other but says nothing about whether the
+    #: best one is actually on topic. Measured on the 1763-chunk corpus,
+    #: "best recipe for banana bread" scored 0.50 and a line of gibberish
+    #: 0.45, both above genuine legal queries; normalising against a random
+    #: background or a z-score does not separate them either — gibberish
+    #: scores highest under all three. So a confidence derived from it is
+    #: not a relevance probability and no threshold can make it abstain
+    #: correctly. Callers surface this rather than presenting the number
+    #: as a trust signal. SentenceTransformerEmbedder does not set it.
+    CALIBRATED = False
+
     def __init__(self, dimension: int = 384) -> None:
         self.name = f"tfidf-{dimension}"
         self.dimension = dimension

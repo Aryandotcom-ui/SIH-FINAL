@@ -301,6 +301,7 @@ function Answer({ data }) {
     citations: data.citations ?? [],
     sources: data.sources ?? [],
     confidence: data.confidence,
+    confidence_calibrated: data.confidence_calibrated,
     abstained: data.abstained,
     generation: data.generation,
     insufficient: data.abstained,
@@ -451,7 +452,8 @@ function AnswerBlock({ b }) {
             )}
           </div>
         </div>
-        <Confidence value={b.confidence} abstained={b.abstained} />
+        <Confidence value={b.confidence} abstained={b.abstained}
+                    calibrated={b.confidence_calibrated !== false} />
       </div>
 
       <div className="answer-body">
