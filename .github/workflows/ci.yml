@@ -17,14 +17,20 @@
 
 name: CI
 
+# Pushes to a branch with an open PR are covered by the pull_request event,
+# so listening to both here ran every commit twice on the same SHA. The
+# default branch keeps its own push trigger because nothing opens a PR
+# against it.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
-# A new push to the same branch makes the in-flight run obsolete.
+# A new push to the same PR makes the in-flight run obsolete. Keyed on the PR
+# number rather than github.ref, which differs between the push and
+# pull_request events for the same commit and so deduplicated nothing.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 defaults:
