@@ -142,6 +142,18 @@ class TfidfEmbedder:
     #: Where the fitted vectorizer is persisted, relative to the Chroma dir.
     ARTIFACT_NAME = "tfidf-vectorizer.joblib"
 
+    #: This backend ranks on shared character n-grams, which is enough to
+    #: order chunks against each other but says nothing about whether the
+    #: best one is actually on topic. Measured on the 1763-chunk corpus,
+    #: "best recipe for banana bread" scored 0.50 and a line of gibberish
+    #: 0.45, both above genuine legal queries; normalising against a random
+    #: background or a z-score does not separate them either — gibberish
+    #: scores highest under all three. So a confidence derived from it is
+    #: not a relevance probability and no threshold can make it abstain
+    #: correctly. Callers surface this rather than presenting the number
+    #: as a trust signal. SentenceTransformerEmbedder does not set it.
+    CALIBRATED = False
+
     def __init__(self, dimension: int = 384) -> None:
         self.name = f"tfidf-{dimension}"
         self.dimension = dimension
@@ -192,6 +204,24 @@ class TfidfEmbedder:
         return self
 
     def save(self, directory) -> None:
+        # Refuse to persist an unfitted vectorizer. An ingest run in which
+        # nothing changed never calls fit() — pipeline.py fits only when
+        # there are dirty chunks — so a caller that saves unconditionally
+        # would overwrite the artifact the index was actually built with,
+        # replacing a fitted space with an empty one. Nothing fails at that
+        # moment: the damage only surfaces at the next query, as a 503 from
+        # _transform()'s guard, long after the run that caused it. Raising
+        # here keeps the failure at the point of the mistake, and keeps the
+        # good artifact on disk.
+        if not self.fitted:
+            raise RuntimeError(
+                "refusing to save an unfitted TfidfEmbedder over the artifact "
+                f"in {directory}. That would replace the vector space the index "
+                "was built with, and every query afterwards would fail. Fit the "
+                "embedder first, or skip the save when an ingest run had nothing "
+                "to embed."
+            )
+
         import joblib
         from pathlib import Path
 

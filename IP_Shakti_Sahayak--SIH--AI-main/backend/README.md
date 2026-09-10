@@ -38,10 +38,10 @@ Example request:
 ```json
 {
   "query": "Can a classical Ayurvedic formulation be patented in India?",
+  "scope": "BOTH",
   "classification": {
     "formulation_type": "classical",
-    "source_organism": "plant",
-    "jurisdiction": "india"
+    "source_organism": "plant"
   },
   "top_k": 5,
   "compliance_facts": {
@@ -52,6 +52,35 @@ Example request:
   "language": null
 }
 ```
+
+`scope` is the jurisdiction the question is answered under — `"IN"`,
+`"INTL"` or `"BOTH"` — and it is a **hard filter on retrieval**, not a
+label on the output. It maps onto the `jurisdiction` each chunk already
+carries in its Chroma metadata (set from `ai/corpus.yaml` at ingest by
+`ai/store.py`), so chunks from the other jurisdiction are never eligible
+to be retrieved. No re-ingestion is needed for it.
+
+`"BOTH"` is **two separately filtered retrievals and two separate
+generation calls**, never one merged search: blending them would put an
+Indian statute and a treaty in the same similarity ranking, where one
+crowds out the other or the two get stitched into a single paragraph
+spanning two legal systems. Each call's prompt also names its jurisdiction
+and forbids reaching outside it, which is the guardrail against the model
+supplying a provision from training knowledge that retrieval deliberately
+excluded.
+
+The response carries a `scope` echo and an `answers` array — one entry per
+jurisdiction, each with its own `answer_text`, `citations`, `sources`,
+`confidence`, `abstained` and `generation`. The flat `answer_text` /
+`citations` / `sources` fields remain populated for callers that predate
+this, carrying the same content with each jurisdiction's block explicitly
+headed. An entry's `insufficient: true` means nothing in that jurisdiction
+matched well enough: no generation ran at all, and the text names the other
+scope rather than guessing.
+
+Omit `scope` and the service falls back to `classification.jurisdiction`
+if that was given, and to `"BOTH"` otherwise — so a client written before
+this field existed keeps the behaviour it had.
 
 `consent_licensed_acts` names any `access: licensed` acts (see
 `ai/corpus.yaml`'s header) the requester consents to being answered from.
@@ -72,9 +101,15 @@ is `false` — the answer is still correct, just not delivered in the
 requester's language.
 
 The response also carries `audit_id`, the id of the row this query wrote
-to the audit log, `compliance`, the ABS obligation report (`null` when
-neither a classification nor compliance facts were supplied), `language`
+to the audit log, `compliance`, the ABS obligation report, `language`
 (the language `answer_text`/`disclaimer` are in), and `translated`.
+
+`compliance` runs on **every** query, whatever the scope and whether or not
+any facts were supplied — with nothing to go on it returns the open
+questions that would decide the matter, which is the point: the applicant
+who needs the ABS flag is the one who does not know to ask for it. It is
+`null` only when the screening itself failed, so an absent report is never
+rendered as "nothing to worry about".
 
 ### Auto-update pipeline (`/api/v1/updates/*`)
 

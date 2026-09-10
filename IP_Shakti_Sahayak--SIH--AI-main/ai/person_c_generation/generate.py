@@ -81,9 +81,34 @@ def format_sources(matched_chunks: list[MatchedChunk]) -> str:
     return "\n\n".join(blocks)
 
 
-def build_prompt(template: str, retrieval_result: RetrievalResult) -> str:
+def jurisdiction_rule(label: str | None) -> str:
+    """The instruction that keeps one jurisdiction's answer inside it.
+
+    Retrieval has already been filtered, so the other jurisdiction's text is
+    not in the prompt at all. This closes the remaining hole: the model's own
+    training knowledge, which will happily supply a TRIPS article the sources
+    never mentioned. Empty when no jurisdiction was requested, in which case
+    the template's own general rule about not mixing jurisdictions applies.
     """
-    Fill {chunks} and {query} in the system prompt template.
+    if not label:
+        return ""
+    return (
+        f"JURISDICTION: you are answering under {label} law only. Use ONLY the "
+        f"{label} sources provided. Do not reference, compare with, or infer "
+        f"rules from any other jurisdiction, and do not supply a provision "
+        f"from memory that is not in the sources above — if the {label} "
+        f"sources do not cover it, say so."
+    )
+
+
+def build_prompt(
+    template: str,
+    retrieval_result: RetrievalResult,
+    jurisdiction_label: str | None = None,
+) -> str:
+    """
+    Fill {chunks}, {query} and {jurisdiction_rule} in the system prompt
+    template.
 
     NOTE: the template also contains a literal JSON example with `{` `}`
     braces (the "Respond in this exact JSON shape" line), so we can't use
@@ -93,6 +118,7 @@ def build_prompt(template: str, retrieval_result: RetrievalResult) -> str:
     sources_block = format_sources(retrieval_result.matched_chunks)
     prompt = template.replace("{chunks}", sources_block)
     prompt = prompt.replace("{query}", retrieval_result.query)
+    prompt = prompt.replace("{jurisdiction_rule}", jurisdiction_rule(jurisdiction_label))
     return prompt
 
 
@@ -226,6 +252,7 @@ def generate_answer(
     mock: bool = False,
     prompt_template_path: Path = SYSTEM_PROMPT_PATH,
     api_key: str | None = None,
+    jurisdiction_label: str | None = None,
 ) -> FinalAnswer:
     """
     Core function: retrieval_result -> final_answer.
@@ -236,9 +263,15 @@ def generate_answer(
 
     `api_key` is forwarded to call_llm() as-is (None falls back to the
     GROQ_API_KEY environment variable there) — see its docstring.
+
+    `jurisdiction_label` ("India" / "International") constrains the answer to
+    one legal system. Retrieval is already filtered to it by the caller; this
+    stops the model topping the answer up from its own training knowledge.
+    None leaves the prompt's general no-mixing rule to do the work, which is
+    the behaviour every caller had before the jurisdiction scope existed.
     """
     template = load_prompt_template(prompt_template_path)
-    prompt = build_prompt(template, retrieval_result)
+    prompt = build_prompt(template, retrieval_result, jurisdiction_label)
 
     if mock:
         raw = MockLLM().complete(prompt, retrieval_result)

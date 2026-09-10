@@ -1,114 +1,143 @@
 /**
  * Backend client for the IP-SAKTI Sahayak FastAPI service.
  *
- * Every call tries the real API first and falls back to sample data when
- * the backend is unreachable (nothing running, or corpus not yet ingested,
- * which returns 503). The fallback sets `demo: true` on the result, and the
- * UI surfaces that as a persistent banner — see lib/demo.js for why that
- * honesty is load-bearing rather than decorative.
+ * Every call goes to the real API. There is no sample-data fallback: a
+ * fabricated legal answer is the one failure this project exists to prevent,
+ * and a UI that silently substitutes invented content for an unreachable
+ * backend is that failure with a friendlier face. When a request fails it
+ * throws an ApiError, and the calling screen says what went wrong and offers
+ * a retry — the honest version of the same information.
  */
-
-import {
-  DEMO_ANSWER, DEMO_ABSTAIN, DEMO_CORPUS, DEMO_CASES,
-  DEMO_DEADLINES, DEMO_REVIEW_QUEUE,
-} from './demo.js';
 
 const BASE = import.meta.env.VITE_API_BASE ?? '/api/v1';
 // Free hosting tiers sleep an idle service and take up to a minute to wake
-// it. At 12s the first request after a quiet spell aborted and the UI fell
-// back to sample data, which reads as "this is broken" rather than "the
-// server is starting". Overridable for a deployment that is always warm.
+// it, so a short timeout turns a cold start into a false "server is down".
+// Overridable for a deployment that is always warm.
 const TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 60000;
+
+/** A failed API call, carrying enough for the UI to explain itself. */
+export class ApiError extends Error {
+  constructor(message, { status = 0, kind = 'server' } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    // 'offline'  — the request never reached an API (nothing running, CORS,
+    //              DNS, or a cold start that outlasted the timeout)
+    // 'timeout'  — it reached one, but nothing came back in time
+    // 'notready' — the API is up but the corpus is not ingested (503)
+    // 'server'   — the API answered with an error
+    this.kind = kind;
+  }
+}
 
 /** Fetch with a timeout — a hung backend must not hang the UI forever. */
 async function req(path, { method = 'GET', body, signal } = {}) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, TIMEOUT_MS);
   if (signal) signal.addEventListener('abort', () => ctrl.abort(), { once: true });
+
+  let res;
   try {
-    const res = await fetch(BASE + path, {
+    res = await fetch(BASE + path, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: ctrl.signal,
     });
-    if (!res.ok) {
-      const detail = await res.json().catch(() => ({}));
-      const err = new Error(detail.detail || `${res.status} ${res.statusText}`);
-      err.status = res.status;
-      throw err;
+  } catch (err) {
+    if (timedOut) {
+      throw new ApiError(
+        'The API did not respond in time. A free-tier server sleeps when idle and can take up to a minute to wake — try again.',
+        { kind: 'timeout' },
+      );
     }
-    return await res.json();
+    // A caller-initiated abort is not a failure to report: let it through so
+    // an in-flight request replaced by a newer one stays silent.
+    if (err.name === 'AbortError') throw err;
+    throw new ApiError(
+      'Could not reach the API. Check that the backend is running and that VITE_API_BASE points at it.',
+      { kind: 'offline' },
+    );
   } finally {
     clearTimeout(timer);
   }
-}
 
-/** Run `live`, falling back to `sample` on any transport/5xx failure. */
-async function withFallback(live, sample) {
-  try {
-    return { data: await live(), demo: false };
-  } catch (err) {
-    if (err.name === 'AbortError') throw err;
-    return { data: typeof sample === 'function' ? sample() : sample, demo: true, reason: err.message };
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new ApiError(
+      detail.detail || `${res.status} ${res.statusText}`,
+      { status: res.status, kind: res.status === 503 ? 'notready' : 'server' },
+    );
   }
+  // An empty body is a legitimate answer, not a parse failure.
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export const api = {
-  corpus: () => withFallback(() => req('/corpus'), DEMO_CORPUS),
+  corpus: ({ signal } = {}) => req('/corpus', { signal }),
 
-  ask: ({ query, language, classification, complianceFacts, topK = 5, signal }) =>
-    withFallback(
-      () => req('/query', {
-        method: 'POST',
-        signal,
-        body: {
-          query,
-          top_k: topK,
-          language: language && language !== 'auto' ? language : null,
-          classification: classification && Object.values(classification).some(Boolean)
-            ? classification : null,
-          compliance_facts: complianceFacts && Object.keys(complianceFacts).length
-            ? complianceFacts : null,
-          consent_licensed_acts: [],
-        },
-      }),
-      // The sample answer is chosen to match the question's shape so the
-      // demo never claims to have retrieved something it plainly did not.
-      () => (looksUnanswerable(query) ? DEMO_ABSTAIN : { ...DEMO_ANSWER, language: language === 'auto' ? 'en' : language }),
-    ),
+  ask: ({ query, scope, classification, complianceFacts, topK = 5, signal }) =>
+    req('/query', {
+      method: 'POST',
+      signal,
+      body: {
+        query,
+        top_k: topK,
+        scope,
+        classification: classification && Object.values(classification).some(Boolean)
+          ? classification : null,
+        compliance_facts: complianceFacts && Object.keys(complianceFacts).length
+          ? complianceFacts : null,
+        consent_licensed_acts: [],
+      },
+    }),
 
-  cases: () => withFallback(() => req('/patent-cases'), DEMO_CASES),
-  caseDeadlines: (id) => withFallback(() => req(`/patent-cases/${id}/deadlines`), DEMO_DEADLINES),
+  // --- patent cases ------------------------------------------------------
+  cases: ({ signal } = {}) => req('/patent-cases', { signal }),
+  createCase: (intake) => req('/patent-cases', { method: 'POST', body: intake }),
+  caseDetail: (id, { signal } = {}) => req(`/patent-cases/${id}`, { signal }),
+  caseDeadlines: (id, { signal } = {}) => req(`/patent-cases/${id}/deadlines`, { signal }),
+  casePrecheck: (id) => req(`/patent-cases/${id}/precheck`, { method: 'POST', body: {} }),
+  caseDraftForms: (id) => req(`/patent-cases/${id}/draft-forms`, { method: 'POST', body: {} }),
+  caseHandoff: (id, { recipient, notes }) =>
+    req(`/patent-cases/${id}/handoff`, {
+      method: 'POST',
+      body: { recipient, notes: notes || null },
+    }),
 
-  reviewPending: () => withFallback(() => req('/updates/pending'), DEMO_REVIEW_QUEUE.filter(r => r.status === 'pending')),
-  reviewHistory: () => withFallback(() => req('/updates/history'), DEMO_REVIEW_QUEUE.filter(r => r.status !== 'pending')),
-  reviewNeedsAudit: () => withFallback(() => req('/updates/needs-audit'), DEMO_REVIEW_QUEUE.filter(r => r.needs_audit)),
+  // --- corpus review gate ------------------------------------------------
+  reviewPending: ({ signal } = {}) => req('/updates/pending', { signal }),
+  reviewQueued: ({ signal } = {}) => req('/updates/queued', { signal }),
+  reviewHistory: ({ signal } = {}) => req('/updates/history', { signal }),
+  reviewNeedsAudit: ({ signal } = {}) => req('/updates/needs-audit', { signal }),
+  reviewCheckNow: () => req('/updates/check-now', { method: 'POST', body: {} }),
+  reviewApprove: (id, decision) => req(`/updates/${id}/approve`, { method: 'POST', body: decision }),
+  reviewReject: (id, decision) => req(`/updates/${id}/reject`, { method: 'POST', body: decision }),
+  reviewClearAudit: (id, decision) => req(`/updates/${id}/clear-audit`, { method: 'POST', body: decision }),
+  reviewPublish: (id) => req(`/updates/${id}/publish`, { method: 'POST', body: {} }),
 };
 
 /**
- * Heuristic used only to pick which sample response to show offline, so a
- * question the corpus obviously cannot answer demos the abstention path
- * instead of inventing a confident answer for it.
+ * The jurisdiction scope.
+ *
+ * This is a hard filter on retrieval, not a display option: it decides which
+ * chunks are eligible before the search runs. "Both" is answered as two
+ * separately filtered searches and two separate generation calls rather than
+ * one blended ranking, so an Indian statute and a treaty can never be
+ * stitched into a single paragraph across two legal systems. See
+ * backend/app/services/ai_service.py.
  */
-function looksUnanswerable(q) {
-  const s = (q || '').toLowerCase();
-  return /recipe|biryani|weather|cricket|stock price|who won|joke/.test(s);
-}
-
-export const LANGUAGES = [
-  { code: 'auto', label: 'Detect', native: 'Auto' },
-  { code: 'en', label: 'English', native: 'English' },
-  { code: 'hi', label: 'Hindi', native: 'हिन्दी' },
-  { code: 'mr', label: 'Marathi', native: 'मराठी' },
-  { code: 'bn', label: 'Bengali', native: 'বাংলা' },
-  { code: 'ta', label: 'Tamil', native: 'தமிழ்' },
-  { code: 'te', label: 'Telugu', native: 'తెలుగు' },
-  { code: 'kn', label: 'Kannada', native: 'ಕನ್ನಡ' },
-  { code: 'ml', label: 'Malayalam', native: 'മലയാളം' },
-  { code: 'gu', label: 'Gujarati', native: 'ગુજરાતી' },
-  { code: 'pa', label: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
+export const SCOPES = [
+  { value: 'IN', label: 'India', jurisdiction: 'india', hint: 'Indian statutes, rules and guidelines only' },
+  { value: 'INTL', label: 'International', jurisdiction: 'international', hint: 'Treaties and international instruments only' },
+  { value: 'BOTH', label: 'Both', jurisdiction: null, hint: 'Answered separately under each, never merged' },
 ];
+
+// Nothing is asked of the user before they have typed anything, so the
+// default covers everything rather than forcing a jurisdiction choice.
+export const DEFAULT_SCOPE = 'BOTH';
 
 export const FORMULATION_TYPES = [
   { value: 'classical', label: 'Classical', hint: 'Made to a formula in an authoritative classical text' },

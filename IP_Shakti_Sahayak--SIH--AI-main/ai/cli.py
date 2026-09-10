@@ -18,6 +18,8 @@ from .metadata import MetadataError, load_manifest
 from .pipeline import ingest
 from .store import Registry, VectorStore
 
+log = logging.getLogger(__name__)
+
 
 def _collect_pdfs(inputs: list[str]) -> list[Path]:
     out: list[Path] = []
@@ -113,8 +115,23 @@ def main(argv: list[str] | None = None) -> int:
         # index it describes. Without this the retrieval service would
         # re-fit on whatever it happened to have and land queries in a
         # different space than the chunks.
+        #
+        # Only when it is actually fitted. A re-ingest in which no chunk
+        # changed never fits (pipeline.py fits only for dirty chunks), and
+        # saving anyway would overwrite the artifact this index was built
+        # with — breaking every subsequent query while this run still
+        # reported success. The existing artifact is already the right one
+        # in that case, so leaving it alone is both the safe and the
+        # correct outcome.
         if not args.dry_run and hasattr(embedder, "save"):
-            embedder.save(args.chroma_path)
+            if getattr(embedder, "fitted", True):
+                embedder.save(args.chroma_path)
+            else:
+                log.info(
+                    "nothing was re-embedded, so the existing vectorizer in %s "
+                    "still describes this index — leaving it as it is",
+                    args.chroma_path,
+                )
     finally:
         registry.close()
 

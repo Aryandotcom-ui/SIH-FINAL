@@ -3,6 +3,21 @@ from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 Jurisdiction = Literal["india", "international"]
+
+# The jurisdiction scope a query is answered under. This is a hard filter on
+# retrieval, not a presentation flag: "IN" and "INTL" restrict which chunks
+# are eligible before generation starts, and "BOTH" runs the two retrievals
+# separately rather than blending them into one similarity ranking (see
+# app/services/ai_service.py). The corpus is already tagged with these
+# jurisdictions at ingest time -- ai/corpus.yaml's `jurisdiction` field is
+# copied onto every chunk's Chroma metadata by ai/store.py -- so the scope
+# maps straight onto that metadata and needs no re-ingestion.
+Scope = Literal["IN", "INTL", "BOTH"]
+
+# Scope code -> the `jurisdiction` value carried on chunk metadata.
+SCOPE_JURISDICTION: dict[str, str] = {"IN": "india", "INTL": "international"}
+# Scope code -> the label shown to the user and given to the generator.
+SCOPE_LABEL: dict[str, str] = {"IN": "India", "INTL": "International"}
 FormulationType = Literal[
     "classical", "proprietary", "new_drug",
     "phytopharmaceutical", "aahar", "cosmetic",
@@ -67,6 +82,11 @@ class QueryRequest(BaseModel):
     # a language-ID model, so pass this when the caller actually knows the
     # language (a language picker in the UI, say).
     language: str | None = Field(default=None, max_length=10)
+    # Jurisdiction scope. None means "not stated by the caller": the service
+    # then falls back to classification.jurisdiction if that was given, and
+    # to "BOTH" otherwise, so a client written before this field existed
+    # keeps the behaviour it had.
+    scope: Scope | None = None
 
 
 class CitationResponse(BaseModel):
@@ -82,6 +102,34 @@ class SourceResponse(BaseModel):
     jurisdiction: str
     similarity_score: float
     source_url: str | None = None
+
+
+class ScopedAnswer(BaseModel):
+    """One jurisdiction's answer, grounded only in that jurisdiction's chunks.
+
+    A "BOTH" query produces two of these — two independently filtered
+    retrievals and two independent generation calls — so a Patents Act
+    clause and a PCT rule can never end up stitched into one paragraph or
+    crowd each other out of a single similarity ranking. The UI renders them
+    as separate labelled blocks for the same reason.
+    """
+    scope: Scope
+    label: str
+    answer_text: str
+    citations: list[CitationResponse] = Field(default_factory=list)
+    sources: list[SourceResponse] = Field(default_factory=list)
+    confidence: float = Field(ge=0, le=1)
+    abstained: bool
+    # False when the active embedder's similarity does not support a
+    # meaningful confidence (the offline TF-IDF stand-in). The number is
+    # still the real score; what is missing is any reason to read it as a
+    # relevance probability. See AIService.confidence_calibrated.
+    confidence_calibrated: bool = True
+    generation: str | None = None
+    # True when nothing in this jurisdiction matched well enough to answer
+    # from. Distinct from a plain abstention only in what the UI can offer:
+    # the other scope may well cover the question, so the message names it.
+    insufficient: bool = False
 
 
 class QueryResponse(BaseModel):
@@ -112,6 +160,10 @@ class QueryResponse(BaseModel):
     # generated answer is the failure mode this whole project exists to
     # avoid.
     generation: str | None = None
+    # See ScopedAnswer.confidence_calibrated. Reported at both levels so a
+    # caller reading only the flat fields still learns that the confidence
+    # beside them is not a calibrated one.
+    confidence_calibrated: bool = True
     # The language answer_text/disclaimer are in — the request's explicit
     # `language`, or the detected one. See ai/translation.py.
     language: str = "en"
@@ -119,11 +171,23 @@ class QueryResponse(BaseModel):
     # backend is configured (ai.translation.NullTranslator) or the
     # translation attempt failed, not that the answer itself is wrong.
     translated: bool = True
+    # The scope the answer was actually produced under, resolved from the
+    # request. Echoed back so the UI can label the answer with what was
+    # used rather than with whatever the toggle happens to say now.
+    scope: Scope = "BOTH"
+    # Per-jurisdiction answers. One entry for "IN"/"INTL", two for "BOTH".
+    # The flat answer_text/citations/sources above stay populated for
+    # callers that predate this field: they carry the same content, with
+    # each jurisdiction's block explicitly headed.
+    answers: list[ScopedAnswer] = Field(default_factory=list)
 
 
 class CorpusResponse(BaseModel):
     collection: str
     chunks: int
+    # Chunk counts per jurisdiction, i.e. how much corpus each scope of the
+    # toggle actually has behind it. Empty if the count could not be taken.
+    jurisdictions: dict[str, int] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
