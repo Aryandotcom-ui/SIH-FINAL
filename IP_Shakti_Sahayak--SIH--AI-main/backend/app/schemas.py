@@ -203,8 +203,28 @@ class ReviewQueueEntry(BaseModel):
 
 
 class ReviewDecisionRequest(BaseModel):
-    decided_by: str = Field(min_length=1, max_length=200)
+    """A reviewer's note on a decision — and nothing else.
+
+    `decided_by` used to live here, as a free-text string the client chose.
+    It is deliberately absent now: the identity written into the audit
+    trail comes from the verified bearer token (see app/auth.py), and a
+    field the server overrides would mislead the next person to read this
+    schema into thinking the client still sets it.
+    """
     notes: str | None = Field(default=None, max_length=2000)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    username: str
+    role: str
+
+
+class IdentityResponse(BaseModel):
+    username: str
+    role: str
 
 
 class CheckNowRequest(BaseModel):
