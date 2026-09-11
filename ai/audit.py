@@ -76,7 +76,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
     consent_given          INTEGER,         -- NULL: nothing licensed matched, gate not applicable
     disclaimer_shown       INTEGER NOT NULL,
     llm_model              TEXT,
-    error                  TEXT
+    error                  TEXT,
+    retrieval_detail       TEXT             -- JSON list[{chunk_id, act_name, section,
+                                            -- jurisdiction, similarity_score}], or NULL
+                                            -- for rows written before this column existed
 );
 CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
 
@@ -136,8 +139,27 @@ class AuditLog:
         self.conn = sqlite3.connect(self.path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(_SCHEMA)
+        self._migrate()
         self.conn.commit()
         self._access_map = load_access_map(corpus_path) if corpus_path else {}
+
+    def _migrate(self) -> None:
+        """Bring an existing audit database up to the current schema.
+
+        CREATE TABLE IF NOT EXISTS does nothing to a table that already
+        exists, so a column added after a deployment has written its first
+        row needs an explicit ALTER. Adding a nullable column is the one
+        migration SQLite does cheaply and without a table rewrite, and NULL
+        is the honest value for a row logged before the column existed --
+        it means "not recorded", which is what happened, rather than an
+        empty list, which would read as "nothing was retrieved".
+        """
+        existing = {
+            row["name"]
+            for row in self.conn.execute("PRAGMA table_info(audit_log)").fetchall()
+        }
+        if "retrieval_detail" not in existing:
+            self.conn.execute("ALTER TABLE audit_log ADD COLUMN retrieval_detail TEXT")
 
     def close(self) -> None:
         self.conn.close()
@@ -194,8 +216,17 @@ class AuditLog:
         disclaimer_shown: bool = True,
         llm_model: str | None = None,
         error: str | None = None,
+        retrieval_detail: list[dict[str, Any]] | None = None,
     ) -> str:
-        """Write one row. Returns the audit entry id."""
+        """Write one row. Returns the audit entry id.
+
+        `retrieval_detail` is what the evidence view needs to reconstruct
+        *why* an answer came out the way it did: which chunk scored what.
+        The scores are not recoverable after the fact -- re-running the
+        query later would rank against whatever the corpus contains then,
+        not against what it contained when the answer was given -- so they
+        are recorded here or they are lost.
+        """
         gate = gate or CitationGate()
         query_id = str(uuid.uuid4())
         ts = _now()
@@ -205,8 +236,8 @@ class AuditLog:
                 id, ts, query_text, jurisdiction, formulation_type, top_k,
                 matched_chunk_ids, confidence, should_abstain, citations,
                 licensed_acts_matched, licensed_acts_withheld, consent_given,
-                disclaimer_shown, llm_model, error
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                disclaimer_shown, llm_model, error, retrieval_detail
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 query_id, ts, query_text, jurisdiction, formulation_type, top_k,
@@ -215,6 +246,7 @@ class AuditLog:
                 json.dumps(gate.licensed_withheld),
                 None if gate.consent_given is None else int(gate.consent_given),
                 int(disclaimer_shown), llm_model, error,
+                None if retrieval_detail is None else json.dumps(retrieval_detail),
             ),
         )
         for act_name in gate.licensed_matched:

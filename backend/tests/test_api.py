@@ -7,8 +7,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.main import app
 from app.api import routes
+from app.auth import Identity, auth_service
 
 client = TestClient(app)
+
+
+def auth_headers(role: str = "REVIEWER", username: str = "test-reviewer") -> dict[str, str]:
+    """A bearer token for a caller at `role`.
+
+    Issued through the real token path rather than by overriding the
+    dependency, so these tests exercise signing and decoding too — the
+    parts that would let a forged token through if they broke.
+    """
+    account_role = role.upper()
+    auth_service._accounts = dict(auth_service.accounts)
+    from app.auth import Account, hash_password
+
+    auth_service._accounts[username] = Account(username, account_role, hash_password("x"))
+    token, _ = auth_service.issue_token(Identity(username, account_role))
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_health():
@@ -146,11 +163,21 @@ def test_abstain_threshold_is_configurable(monkeypatch):
 
     service._embedder = FakeEmbedder()
     service._store = FakeStore()
+    # Confidence is no longer the raw top similarity: it measures whether
+    # the retrieved evidence covers the subject of the question. So this
+    # asserts what the test is actually named for — that the configured
+    # threshold is the one the decision is taken against — by driving the
+    # same retrieval either side of it.
     monkeypatch.setattr("app.services.ai_service.settings.abstain_threshold", 0.10)
+    low, _ = service.retrieve("patent novelty", None, 1)
+    assert 0.0 <= low.confidence <= 1.0
+    assert low.should_abstain is False, "a threshold below the score must not abstain"
 
-    retrieval, _ = service.retrieve("patent novelty", None, 1)
-    assert retrieval.confidence == 0.15
-    assert retrieval.should_abstain is False
+    monkeypatch.setattr(
+        "app.services.ai_service.settings.abstain_threshold", low.confidence + 0.05
+    )
+    high, _ = service.retrieve("patent novelty", None, 1)
+    assert high.should_abstain is True, "a threshold above the score must abstain"
 
 
 def test_configured_groq_key_is_forwarded_to_generation(monkeypatch):
@@ -320,15 +347,20 @@ def test_updates_approve_success(monkeypatch):
     class FakeUpdatesService:
         def approve(self, entry_id, *, decided_by, notes=None):
             assert entry_id == "e1"
-            assert decided_by == "reviewer@example.test"
+            # The identity is the authenticated one, never the body.
+            assert decided_by == "test-reviewer"
+            assert notes == "ok"
 
     monkeypatch.setattr(updates_routes, "updates_service", FakeUpdatesService())
     response = client.post(
         "/api/v1/updates/e1/approve",
-        json={"decided_by": "reviewer@example.test", "notes": "ok"},
+        json={"notes": "ok"},
+        headers=auth_headers("REVIEWER"),
     )
     assert response.status_code == 200
-    assert response.json() == {"id": "e1", "status": "approved"}
+    assert response.json() == {
+        "id": "e1", "status": "approved", "decided_by": "test-reviewer",
+    }
 
 
 def test_updates_approve_conflict_returns_409(monkeypatch):
@@ -341,7 +373,7 @@ def test_updates_approve_conflict_returns_409(monkeypatch):
 
     monkeypatch.setattr(updates_routes, "updates_service", FakeUpdatesService())
     response = client.post(
-        "/api/v1/updates/e1/approve", json={"decided_by": "reviewer@example.test"}
+        "/api/v1/updates/e1/approve", json={}, headers=auth_headers("REVIEWER")
     )
     assert response.status_code == 409
 
@@ -354,7 +386,9 @@ def test_updates_publish_missing_entry_returns_404(monkeypatch):
             raise ValueError(f"no review-queue entry {entry_id!r}")
 
     monkeypatch.setattr(updates_routes, "updates_service", FakeUpdatesService())
-    response = client.post("/api/v1/updates/missing/publish")
+    response = client.post(
+        "/api/v1/updates/missing/publish", headers=auth_headers("ADMIN", "test-admin")
+    )
     assert response.status_code == 404
 
 
@@ -369,7 +403,9 @@ def test_updates_check_now_returns_summary(monkeypatch):
             ]}
 
     monkeypatch.setattr(updates_routes, "updates_service", FakeUpdatesService())
-    response = client.post("/api/v1/updates/check-now", json={})
+    response = client.post(
+        "/api/v1/updates/check-now", json={}, headers=auth_headers("ADMIN", "test-admin")
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["checked"] == 2

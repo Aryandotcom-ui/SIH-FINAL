@@ -3,54 +3,104 @@
     "id": "q01",
     "query": "Can I patent a classical Ayurvedic formulation using neem extract?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0001", "text": "Section 3(p) excludes an invention which, in effect, is traditional knowledge.", "act_name": "Patents Act, 1970", "section": "3(p)", "jurisdiction": "india", "similarity_score": 0.91}
+      {
+        "chunk_id": "chunk_0001",
+        "text": "Section 3(p) excludes an invention which, in effect, is traditional knowledge.",
+        "act_name": "Patents Act, 1970",
+        "section": "3(p)",
+        "jurisdiction": "india",
+        "similarity_score": 0.91
+      }
     ],
     "confidence": 0.88,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Patents Act, 1970", "section": "3(p)"}
+    "expected_citation": {
+      "act_name": "Patents Act, 1970",
+      "section": "3(p)"
+    },
+    "category": "patentability",
+    "retrieval": null
   },
   {
     "id": "q02",
     "query": "Is a novel extraction process for a traditional formulation separately patentable?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0012", "text": "Where an applicant modifies a traditional formulation through a novel extraction process, the modified aspect alone may be examined for novelty.", "act_name": "Patents Act, 1970", "section": "3(p) - Explanatory Note", "jurisdiction": "india", "similarity_score": 0.83}
+      {
+        "chunk_id": "chunk_0012",
+        "text": "Where an applicant modifies a traditional formulation through a novel extraction process, the modified aspect alone may be examined for novelty.",
+        "act_name": "Patents Act, 1970",
+        "section": "3(p) - Explanatory Note",
+        "jurisdiction": "india",
+        "similarity_score": 0.83
+      }
     ],
     "confidence": 0.79,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Patents Act, 1970", "section": "3(p) - Explanatory Note"}
+    "expected_citation": {
+      "act_name": "Patents Act, 1970",
+      "section": "3(p) - Explanatory Note"
+    },
+    "category": "patentability",
+    "retrieval": null
   },
   {
     "id": "q03",
     "query": "What defines a 'classical' formulation for patent examination purposes?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0007", "text": "A formulation shall be considered 'classical' where its composition is drawn directly from a recognised Ayurvedic text without modification.", "act_name": "Ayurveda, Siddha and Unani Drugs Technical Advisory Board Guidelines", "section": "4.2", "jurisdiction": "india", "similarity_score": 0.86}
+      {
+        "chunk_id": "chunk_0007",
+        "text": "A formulation shall be considered 'classical' where its composition is drawn directly from a recognised Ayurvedic text without modification.",
+        "act_name": "Ayurveda, Siddha and Unani Drugs Technical Advisory Board Guidelines",
+        "section": "4.2",
+        "jurisdiction": "india",
+        "similarity_score": 0.86
+      }
     ],
     "confidence": 0.81,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Ayurveda, Siddha and Unani Drugs Technical Advisory Board Guidelines", "section": "4.2"}
+    "expected_citation": {
+      "act_name": "Ayurveda, Siddha and Unani Drugs Technical Advisory Board Guidelines",
+      "section": "4.2"
+    },
+    "category": "tk",
+    "retrieval": null
   },
   {
     "id": "q04",
     "query": "Does the international Patent Cooperation Treaty recognise traditional knowledge exclusions?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0021", "text": "Contracting states may apply their own domestic traditional-knowledge exclusions during national phase examination.", "act_name": "Patent Cooperation Treaty", "section": "Art. 27", "jurisdiction": "international", "similarity_score": 0.74}
+      {
+        "chunk_id": "chunk_0021",
+        "text": "Contracting states may apply their own domestic traditional-knowledge exclusions during national phase examination.",
+        "act_name": "Patent Cooperation Treaty",
+        "section": "Art. 27",
+        "jurisdiction": "international",
+        "similarity_score": 0.74
+      }
     ],
     "confidence": 0.68,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Patent Cooperation Treaty", "section": "Art. 27"}
+    "expected_citation": {
+      "act_name": "Patent Cooperation Treaty",
+      "section": "Art. 27"
+    },
+    "category": "jurisdiction_intl",
+    "retrieval": null
   },
   {
     "id": "q05",
     "query": "What is the trademark registration fee for a foreign applicant filing in Japan?",
     "matched_chunks": [],
-    "confidence": 0.10,
+    "confidence": 0.1,
     "should_abstain": true,
     "expect_abstain": true,
-    "expected_citation": null
+    "expected_citation": null,
+    "category": "unanswerable",
+    "retrieval": null
   },
   {
     "id": "q06",
@@ -59,40 +109,78 @@
     "confidence": 0.08,
     "should_abstain": true,
     "expect_abstain": true,
-    "expected_citation": null
+    "expected_citation": null,
+    "category": "unanswerable",
+    "retrieval": null
   },
   {
     "id": "q07",
     "query": "Can a phytopharmaceutical drug derived from a known plant be patented in India?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0033", "text": "A phytopharmaceutical drug, being a purified and standardised fraction with defined qualitative composition, is not per se excluded under Section 3(p) merely because its source plant is traditionally known.", "act_name": "Patents Act, 1970", "section": "3(p) - Phytopharmaceutical Proviso", "jurisdiction": "india", "similarity_score": 0.89}
+      {
+        "chunk_id": "chunk_0033",
+        "text": "A phytopharmaceutical drug, being a purified and standardised fraction with defined qualitative composition, is not per se excluded under Section 3(p) merely because its source plant is traditionally known.",
+        "act_name": "Patents Act, 1970",
+        "section": "3(p) - Phytopharmaceutical Proviso",
+        "jurisdiction": "india",
+        "similarity_score": 0.89
+      }
     ],
     "confidence": 0.85,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Patents Act, 1970", "section": "3(p) - Phytopharmaceutical Proviso"}
+    "expected_citation": {
+      "act_name": "Patents Act, 1970",
+      "section": "3(p) - Phytopharmaceutical Proviso"
+    },
+    "category": "patentability",
+    "retrieval": null
   },
   {
     "id": "q08",
     "query": "What labelling is required for an Ayurvedic cosmetic product sold in India?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0044", "text": "Every Ayurvedic cosmetic shall bear on its label the true list of ingredients and the licence number of the manufacturer.", "act_name": "Drugs and Cosmetics Rules, 1945", "section": "Rule 148", "jurisdiction": "india", "similarity_score": 0.80}
+      {
+        "chunk_id": "chunk_0044",
+        "text": "Every Ayurvedic cosmetic shall bear on its label the true list of ingredients and the licence number of the manufacturer.",
+        "act_name": "Drugs and Cosmetics Rules, 1945",
+        "section": "Rule 148",
+        "jurisdiction": "india",
+        "similarity_score": 0.8
+      }
     ],
     "confidence": 0.77,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Drugs and Cosmetics Rules, 1945", "section": "Rule 148"}
+    "expected_citation": {
+      "act_name": "Drugs and Cosmetics Rules, 1945",
+      "section": "Rule 148"
+    },
+    "category": "labelling",
+    "retrieval": null
   },
   {
     "id": "q09",
     "query": "Is prior informed consent from a local community required before commercial use of a traditional formulation?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0050", "text": "Access to and commercial use of traditional knowledge associated with biological resources requires prior approval from the National Biodiversity Authority.", "act_name": "Biological Diversity Act, 2002", "section": "Section 3", "jurisdiction": "india", "similarity_score": 0.84}
+      {
+        "chunk_id": "chunk_0050",
+        "text": "Access to and commercial use of traditional knowledge associated with biological resources requires prior approval from the National Biodiversity Authority.",
+        "act_name": "Biological Diversity Act, 2002",
+        "section": "Section 3",
+        "jurisdiction": "india",
+        "similarity_score": 0.84
+      }
     ],
-    "confidence": 0.80,
+    "confidence": 0.8,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Biological Diversity Act, 2002", "section": "Section 3"}
+    "expected_citation": {
+      "act_name": "Biological Diversity Act, 2002",
+      "section": "Section 3"
+    },
+    "category": "abs",
+    "retrieval": null
   },
   {
     "id": "q10",
@@ -101,29 +189,55 @@
     "confidence": 0.05,
     "should_abstain": true,
     "expect_abstain": true,
-    "expected_citation": null
+    "expected_citation": null,
+    "category": "unanswerable",
+    "retrieval": null
   },
   {
     "id": "q11",
     "query": "Can a new drug developed from a mixed plant-animal source formulation be patented?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0061", "text": "A new drug formulation combining plant and animal-derived components is assessed for novelty and inventive step independent of the traditional-knowledge status of its individual components, provided the combination itself is not disclosed in prior art.", "act_name": "Patents Act, 1970", "section": "Section 2(1)(j)", "jurisdiction": "india", "similarity_score": 0.82}
+      {
+        "chunk_id": "chunk_0061",
+        "text": "A new drug formulation combining plant and animal-derived components is assessed for novelty and inventive step independent of the traditional-knowledge status of its individual components, provided the combination itself is not disclosed in prior art.",
+        "act_name": "Patents Act, 1970",
+        "section": "Section 2(1)(j)",
+        "jurisdiction": "india",
+        "similarity_score": 0.82
+      }
     ],
     "confidence": 0.78,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Patents Act, 1970", "section": "Section 2(1)(j)"}
+    "expected_citation": {
+      "act_name": "Patents Act, 1970",
+      "section": "Section 2(1)(j)"
+    },
+    "category": "patentability",
+    "retrieval": null
   },
   {
     "id": "q12",
     "query": "Does the TRIPS Agreement require WTO members to protect traditional knowledge as such?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0070", "text": "The TRIPS Agreement does not contain an express obligation requiring member states to protect traditional knowledge as a distinct category of intellectual property.", "act_name": "TRIPS Agreement", "section": "Part II", "jurisdiction": "international", "similarity_score": 0.71}
+      {
+        "chunk_id": "chunk_0070",
+        "text": "The TRIPS Agreement does not contain an express obligation requiring member states to protect traditional knowledge as a distinct category of intellectual property.",
+        "act_name": "TRIPS Agreement",
+        "section": "Part II",
+        "jurisdiction": "international",
+        "similarity_score": 0.71
+      }
     ],
     "confidence": 0.66,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "TRIPS Agreement", "section": "Part II"}
+    "expected_citation": {
+      "act_name": "TRIPS Agreement",
+      "section": "Part II"
+    },
+    "category": "jurisdiction_intl",
+    "retrieval": null
   },
   {
     "id": "q13",
@@ -132,18 +246,32 @@
     "confidence": 0.07,
     "should_abstain": true,
     "expect_abstain": true,
-    "expected_citation": null
+    "expected_citation": null,
+    "category": "unanswerable",
+    "retrieval": null
   },
   {
     "id": "q14",
     "query": "Is an 'aahar' (nutraceutical food) formulation examined under the Patents Act or the Food Safety Act?",
     "matched_chunks": [
-      {"chunk_id": "chunk_0080", "text": "Formulations classified as 'aahar' intended primarily for nutritional use are regulated under food safety standards, while any novel process claim relating to their manufacture remains separately examinable under the Patents Act.", "act_name": "Food Safety and Standards Act, 2006", "section": "Section 22", "jurisdiction": "india", "similarity_score": 0.75}
+      {
+        "chunk_id": "chunk_0080",
+        "text": "Formulations classified as 'aahar' intended primarily for nutritional use are regulated under food safety standards, while any novel process claim relating to their manufacture remains separately examinable under the Patents Act.",
+        "act_name": "Food Safety and Standards Act, 2006",
+        "section": "Section 22",
+        "jurisdiction": "india",
+        "similarity_score": 0.75
+      }
     ],
     "confidence": 0.72,
     "should_abstain": false,
     "expect_abstain": false,
-    "expected_citation": {"act_name": "Food Safety and Standards Act, 2006", "section": "Section 22"}
+    "expected_citation": {
+      "act_name": "Food Safety and Standards Act, 2006",
+      "section": "Section 22"
+    },
+    "category": "patentability",
+    "retrieval": null
   },
   {
     "id": "q15",
@@ -152,6 +280,645 @@
     "confidence": 0.06,
     "should_abstain": true,
     "expect_abstain": true,
-    "expected_citation": null
+    "expected_citation": null,
+    "category": "unanswerable",
+    "retrieval": null
+  },
+  {
+    "id": "q16",
+    "category": "patentability",
+    "query": "Are plants and animals as such excluded from patentability in India?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-patents-act-1970--s3",
+        "text": "The Patents Act, 1970 — Section 3: What are not inventions.—The following are not inventions within the meaning of this\n\n3. What are not inventions.—The following are not inventions within the meaning of this\nAct,—\n(a) an invention which is frivolous or which claims anything obviously contrary to well\nestablished natural laws;\n4[(b) an invention the primary or intended use or commercial exploitation of which would be\ncontrary to public order or morality or which causes serious prejudice to human, animal or plant life\nor health or to the environment;]\n(c) the mere discovery of a scientific prin",
+        "act_name": "The Patents Act, 1970",
+        "section": "Section 3",
+        "jurisdiction": "india",
+        "similarity_score": 0.82
+      }
+    ],
+    "confidence": 0.82,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Patents Act, 1970",
+      "section": "Section 3"
+    },
+    "retrieval": {
+      "expected_act": "The Patents Act, 1970",
+      "expected_section": "Section 3"
+    }
+  },
+  {
+    "id": "q17",
+    "category": "patentability",
+    "query": "Must a complete specification disclose the source of the biological material used in the invention?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-patents-act-1970--s10--p1",
+        "text": "The Patents Act, 1970 — Section 10: Contents of specifications.—(1) Every specification, whether provisional or complete, shall\n\n(part 1 of 2)\n10. Contents of specifications.—(1) Every specification, whether provisional or complete, shall\ndescribe the invention and shall begin with a title sufficiently indicating the subject-matter to which the\ninvention relates.\n(2) Subject to any rules that may be made in this behalf under this Act, drawings may, and shall, if the\nController so requires, be supplied for the purposes of any specification, whether complete or provisional;\nand any drawings so s",
+        "act_name": "The Patents Act, 1970",
+        "section": "Section 10",
+        "jurisdiction": "india",
+        "similarity_score": 0.79
+      }
+    ],
+    "confidence": 0.79,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Patents Act, 1970",
+      "section": "Section 10"
+    },
+    "retrieval": {
+      "expected_act": "The Patents Act, 1970",
+      "expected_section": "Section 10"
+    }
+  },
+  {
+    "id": "q18",
+    "category": "temporal",
+    "query": "By when must a request for examination of a patent application be filed?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-patents-act-1970--s11b",
+        "text": "The Patents Act, 1970 — Section 11B: Request for examination.—3[(1) No application for a patent shall be examined unless the\n\n11B. Request for examination.—3[(1) No application for a patent shall be examined unless the\napplicant or any other interested person makes a request in the prescribed manner for such examination\nwithin the prescribed period.]\n4*\n\n*\n\n*\n\n*\n\n*\n5[(3) In case of an application in respect of a claim for a patent filed under sub-section (2) of section 5\nbefore the 1st day of January, 2005 a request for its examination shall be made in the prescribed manner\nand within the pres",
+        "act_name": "The Patents Act, 1970",
+        "section": "Section 11B",
+        "jurisdiction": "india",
+        "similarity_score": 0.76
+      }
+    ],
+    "confidence": 0.76,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Patents Act, 1970",
+      "section": "Section 11B"
+    },
+    "retrieval": {
+      "expected_act": "The Patents Act, 1970",
+      "expected_section": "Section 11B"
+    }
+  },
+  {
+    "id": "q19",
+    "category": "patentability",
+    "query": "Can a mere admixture of known substances be patented?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-patents-act-1970--s3",
+        "text": "The Patents Act, 1970 — Section 3: What are not inventions.—The following are not inventions within the meaning of this\n\n3. What are not inventions.—The following are not inventions within the meaning of this\nAct,—\n(a) an invention which is frivolous or which claims anything obviously contrary to well\nestablished natural laws;\n4[(b) an invention the primary or intended use or commercial exploitation of which would be\ncontrary to public order or morality or which causes serious prejudice to human, animal or plant life\nor health or to the environment;]\n(c) the mere discovery of a scientific prin",
+        "act_name": "The Patents Act, 1970",
+        "section": "Section 3",
+        "jurisdiction": "india",
+        "similarity_score": 0.8
+      }
+    ],
+    "confidence": 0.8,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Patents Act, 1970",
+      "section": "Section 3"
+    },
+    "retrieval": {
+      "expected_act": "The Patents Act, 1970",
+      "expected_section": "Section 3"
+    }
+  },
+  {
+    "id": "q20",
+    "category": "abs",
+    "query": "Do I need approval from the National Biodiversity Authority before applying for a patent based on a biological resource?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-biological-diversity-act-2002--s6--p1",
+        "text": "The Biological Diversity Act, 2002 — Section 6: Application for intellectual property rights not to be made without approval of National\n\n(part 1 of 2)\n6. Application for intellectual property rights not to be made without approval of National\nBiodiversity Authority.—1[(1) Any person or entity covered under sub-section (2) of section 3 applying\nfor an intellectual property right, by whatever name called, in or outside India, for any invention based on\nany research or information on a biological resource which is accessed from India, including those\ndeposited in repositories outside India, or t",
+        "act_name": "The Biological Diversity Act, 2002",
+        "section": "Section 6",
+        "jurisdiction": "india",
+        "similarity_score": 0.88
+      }
+    ],
+    "confidence": 0.88,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Biological Diversity Act, 2002",
+      "section": "Section 6"
+    },
+    "retrieval": {
+      "expected_act": "The Biological Diversity Act, 2002",
+      "expected_section": "Section 6"
+    }
+  },
+  {
+    "id": "q21",
+    "category": "abs",
+    "query": "Which activities involving biological resources need prior approval from the National Biodiversity Authority?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-biological-diversity-act-2002--s19",
+        "text": "The Biological Diversity Act, 2002 — Section 19: Approval by National Biodiversity Authority for undertaking certain activities.—(1) Any\n\n19. Approval by National Biodiversity Authority for undertaking certain activities.—(1) Any\nperson referred to in sub-section (2) of section 3 who intends to obtain any biological resource occurring\nin India or knowledge associated thereto for research or for commercial utilisation or for bio-survey and\nbio-utilisation or transfer the results of any research relating to biological resources occurring in, or\nobtained from, India, shall make application in suc",
+        "act_name": "The Biological Diversity Act, 2002",
+        "section": "Section 19",
+        "jurisdiction": "india",
+        "similarity_score": 0.81
+      }
+    ],
+    "confidence": 0.81,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Biological Diversity Act, 2002",
+      "section": "Section 19"
+    },
+    "retrieval": {
+      "expected_act": "The Biological Diversity Act, 2002",
+      "expected_section": "Section 19"
+    }
+  },
+  {
+    "id": "q22",
+    "category": "abs",
+    "query": "How is fair and equitable benefit sharing determined?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-biological-diversity-act-2002--s21",
+        "text": "The Biological Diversity Act, 2002 — Section 21: Determination of 6[fair and equitable] benefit sharing by National Biodiversity Authority\n\n21. Determination of 6[fair and equitable] benefit sharing by National Biodiversity Authority.—\n7[(1) The National Biodiversity Authority shall, while determining benefit sharing for the approval\ngranted under this Act, ensure that the terms and conditions subject to which the approval is granted\nsecures fair and equitable sharing of benefits arising out of the use of accessed biological resources, their\nderivatives, innovations and practices associated wi",
+        "act_name": "The Biological Diversity Act, 2002",
+        "section": "Section 21",
+        "jurisdiction": "india",
+        "similarity_score": 0.84
+      }
+    ],
+    "confidence": 0.84,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Biological Diversity Act, 2002",
+      "section": "Section 21"
+    },
+    "retrieval": {
+      "expected_act": "The Biological Diversity Act, 2002",
+      "expected_section": "Section 21"
+    }
+  },
+  {
+    "id": "q23",
+    "category": "abs",
+    "query": "What are the functions of a State Biodiversity Board?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-biological-diversity-act-2002--s23",
+        "text": "The Biological Diversity Act, 2002 — Section 23: Functions of State Biodiversity Board.—The functions of the State Biodiversity Board shall be\n\n23. Functions of State Biodiversity Board.—The functions of the State Biodiversity Board shall be\nto—\n4[(a) advise the State Government on matters relating to the conservation of biodiversity,\nsustainable use of its components and fair and equitable sharing of benefits arising out of the\nutilisation of biological resources or traditional knowledge associated thereto, in conformity with the\nregulations or guidelines if any, issued by the Central Governm",
+        "act_name": "The Biological Diversity Act, 2002",
+        "section": "Section 23",
+        "jurisdiction": "india",
+        "similarity_score": 0.83
+      }
+    ],
+    "confidence": 0.83,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Biological Diversity Act, 2002",
+      "section": "Section 23"
+    },
+    "retrieval": {
+      "expected_act": "The Biological Diversity Act, 2002",
+      "expected_section": "Section 23"
+    }
+  },
+  {
+    "id": "q24",
+    "category": "abs",
+    "query": "What is the procedure for obtaining prior approval before the grant of intellectual property?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-biological-diversity-rules-2024--s16--p1",
+        "text": "The Biological Diversity Rules, 2024 — Section 16: Procedure for registration and obtaining prior approval from Authority before grant of intellectual property\n\n(part 1 of 3)\n16. Procedure for registration and obtaining prior approval from Authority before grant of intellectual property\nrights.- (1) Procedure for seeking prior approval before grant of intellectual property rights by any person referred to\nin sub-section (2) of section 3 of the Act shall be as follows, namely:-\n(a) Any person referred to in sub-section (2) of section 3 of the Act, applying for any intellectual property\nrights, ",
+        "act_name": "The Biological Diversity Rules, 2024",
+        "section": "Section 16",
+        "jurisdiction": "india",
+        "similarity_score": 0.85
+      }
+    ],
+    "confidence": 0.85,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Biological Diversity Rules, 2024",
+      "section": "Section 16"
+    },
+    "retrieval": {
+      "expected_act": "The Biological Diversity Rules, 2024",
+      "expected_section": "Section 16"
+    }
+  },
+  {
+    "id": "q25",
+    "category": "abs",
+    "query": "Can the Authority revoke an access approval that has already been granted?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-biological-diversity-rules-2024--s17",
+        "text": "The Biological Diversity Rules, 2024 — Section 17: Revocation of access or approval.- (1) The Authority may either on the basis of a complaint or suo moto withdraw\n\n17. Revocation of access or approval.- (1) The Authority may either on the basis of a complaint or suo moto withdraw\nthe approvals granted under rules 13, 15, sub-rule(1) and (3) of rule 16 and rule 20 revoke the agreement or any part\nthereof, after giving a reasonable opportunity of being heard to the applicant, under the following conditions, namely: -\n[भाग II—खण् ड 3(i)]\nभारत का रािपत्र : असाधारण\n\n(i)\non the basis of reasonable ",
+        "act_name": "The Biological Diversity Rules, 2024",
+        "section": "Section 17",
+        "jurisdiction": "india",
+        "similarity_score": 0.8
+      }
+    ],
+    "confidence": 0.8,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Biological Diversity Rules, 2024",
+      "section": "Section 17"
+    },
+    "retrieval": {
+      "expected_act": "The Biological Diversity Rules, 2024",
+      "expected_section": "Section 17"
+    }
+  },
+  {
+    "id": "q26",
+    "category": "temporal",
+    "query": "What did the 2023 amendment change in the definitions under the Biological Diversity Act?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-biological-diversity-amendment-act-2--s3",
+        "text": "The Biological Diversity (Amendment) Act, 2023 — Section 3: In section 2 of the principal Act,\n\n3. In section 2 of the principal Act,—\n(i) for clause (a), the following clauses shall be substituted, namely:—\n'(a) \"access\" means collecting, procuring or possessing any biological\nresource occurring in or obtained from India or traditional knowledge associated\nthereto, for the purposes of research or bio-survey or commercial utilisation;\n(aa) \"benefit claimers\" means the conservers of biological resources, their\nby-products, creators or holders of traditional knowledge associated thereto\n(excludi",
+        "act_name": "The Biological Diversity (Amendment) Act, 2023",
+        "section": "Section 3",
+        "jurisdiction": "india",
+        "similarity_score": 0.77
+      }
+    ],
+    "confidence": 0.77,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Biological Diversity (Amendment) Act, 2023",
+      "section": "Section 3"
+    },
+    "retrieval": {
+      "expected_act": "The Biological Diversity (Amendment) Act, 2023",
+      "expected_section": "Section 3"
+    }
+  },
+  {
+    "id": "q27",
+    "category": "tk",
+    "query": "How does the patent office treat traditional knowledge when examining an Ayush invention?",
+    "matched_chunks": [
+      {
+        "chunk_id": "guidelines-for-examination-of-ayush-rela--s3--p1",
+        "text": "Guidelines for Examination of Ayush Related Inventions, 2025 — Section 3: (a): an invention which is frivolous or which claims\n\n(part 1 of 2)\nSection 3(a): an invention which is frivolous or which claims\nanything obviously contrary to well established natural laws;\nSection 3(b): an invention the primary or intended use or\ncommercial exploitation of which could be contrary to public\norder or morality or which causes serious prejudice to human,\nanimal or plant life or health or to the environment;\nSection 3(c): the mere discovery of a scientific principle or the\nformulation of an abstract theory",
+        "act_name": "Guidelines for Examination of Ayush Related Inventions, 2025",
+        "section": "Section 3",
+        "jurisdiction": "india",
+        "similarity_score": 0.83
+      }
+    ],
+    "confidence": 0.83,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "Guidelines for Examination of Ayush Related Inventions, 2025",
+      "section": "Section 3"
+    },
+    "retrieval": {
+      "expected_act": "Guidelines for Examination of Ayush Related Inventions, 2025",
+      "expected_section": "Section 3"
+    }
+  },
+  {
+    "id": "q28",
+    "category": "tk",
+    "query": "How do the Ayush examination guidelines treat the Biological Diversity (Amendment) Act, 2023?",
+    "matched_chunks": [
+      {
+        "chunk_id": "guidelines-for-examination-of-ayush-rela--s6",
+        "text": "Guidelines for Examination of Ayush Related Inventions, 2025 — Section 6: The Biological Diversity (Amendment) Act, 2023,\n\n6. The Biological Diversity (Amendment) Act, 2023,\nhttps://egazette.gov.in/WriteReadData/2023/247815.pdf",
+        "act_name": "Guidelines for Examination of Ayush Related Inventions, 2025",
+        "section": "Section 6",
+        "jurisdiction": "india",
+        "similarity_score": 0.78
+      }
+    ],
+    "confidence": 0.78,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "Guidelines for Examination of Ayush Related Inventions, 2025",
+      "section": "Section 6"
+    },
+    "retrieval": {
+      "expected_act": "Guidelines for Examination of Ayush Related Inventions, 2025",
+      "expected_section": "Section 6"
+    }
+  },
+  {
+    "id": "q29",
+    "category": "jurisdiction_intl",
+    "query": "What disclosure does the WIPO GRATK Treaty require for inventions based on genetic resources?",
+    "matched_chunks": [
+      {
+        "chunk_id": "wipo-treaty-on-intellectual-property-gen--art3",
+        "text": "WIPO Treaty on Intellectual Property, Genetic Resources and Associated Traditional Knowledge, 2024 — Article 3\n\nARTICLE 3\nDISCLOSURE REQUIREMENT\n\n3.1\nWhere the claimed invention in a patent application is based on genetic resources, each\nContracting Party shall require applicants to disclose:\n\n(a)\nthe country of origin of the genetic resources2, or,\n\n(b)\nin cases where the information in Article 3.1(a) is not known to the applicant, or\nwhere Article 3.1(a) does not apply, the source of the genetic resources.\n\n3.2\nWhere the claimed invention in a patent application is based on traditional knowl",
+        "act_name": "WIPO Treaty on Intellectual Property, Genetic Resources and Associated Traditional Knowledge, 2024",
+        "section": "Article 3",
+        "jurisdiction": "international",
+        "similarity_score": 0.86
+      }
+    ],
+    "confidence": 0.86,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "WIPO Treaty on Intellectual Property, Genetic Resources and Associated Traditional Knowledge, 2024",
+      "section": "Article 3"
+    },
+    "retrieval": {
+      "expected_act": "WIPO Treaty on Intellectual Property, Genetic Resources and Associated Traditional Knowledge, 2024",
+      "expected_section": "Article 3"
+    }
+  },
+  {
+    "id": "q30",
+    "category": "jurisdiction_intl",
+    "query": "What must a PCT applicant furnish to the designated offices?",
+    "matched_chunks": [
+      {
+        "chunk_id": "patent-cooperation-treaty--art22",
+        "text": "Patent Cooperation Treaty — Article 22\n\nArticle 22\nCopy, Translation, and Fee, to Designated Offices\n\n(1) The applicant shall furnish a copy of the international application\n(unless the communication provided for in Article 20 has already taken\nplace) and a translation thereof (as prescribed), and pay the national fee\n(if any), to each designated Office not later than at the expiration of 301\nmonths from the priority date. Where the national law of the designated\nState requires the indication of the name of and other prescribed data\nconcerning the inventor but allows that these indications be ",
+        "act_name": "Patent Cooperation Treaty",
+        "section": "Article 22",
+        "jurisdiction": "international",
+        "similarity_score": 0.79
+      }
+    ],
+    "confidence": 0.79,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "Patent Cooperation Treaty",
+      "section": "Article 22"
+    },
+    "retrieval": {
+      "expected_act": "Patent Cooperation Treaty",
+      "expected_section": "Article 22"
+    }
+  },
+  {
+    "id": "q31",
+    "category": "labelling",
+    "query": "What labelling requirements apply to cosmetics sold in India?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-cosmetics-rules-2020--s20--p1",
+        "text": "The Cosmetics Rules, 2020 — Section 20: Procedure for import of cosmetics.—(1) If the officer appointed at\n\n(part 1 of 2)\n20. Procedure for import of cosmetics.—(1) If the officer appointed at\nthe port of entry by the Central Government has reason to believe that any\ncosmetic contravenes any of the provisions of the Act or the rules made\nthereunder, he may take sample of the cosmetic from the consignment for\ninspection.\n(2) If on examination of the sample drawn as per sub-rule (1) defects are\nnoticed, the officer shall advise the Commissioner of Customs about further\naction to be taken.\n(3) If",
+        "act_name": "The Cosmetics Rules, 2020",
+        "section": "Section 20",
+        "jurisdiction": "india",
+        "similarity_score": 0.72
+      }
+    ],
+    "confidence": 0.72,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Cosmetics Rules, 2020",
+      "section": "Section 20"
+    },
+    "retrieval": {
+      "expected_act": "The Cosmetics Rules, 2020",
+      "expected_section": "Section 20"
+    }
+  },
+  {
+    "id": "q32",
+    "category": "gi",
+    "query": "Who may apply for registration of a geographical indication?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-geographical-indications-of-goods-re--s11",
+        "text": "The Geographical Indications of Goods (Registration and Protection) Act, 1999 — Section 11: Application for registration.—(1) Any association of persons or producers or any organisation\n\n11. Application for registration.—(1) Any association of persons or producers or any organisation\nor authority established by or under any law for the time being in force representing the interest of the\nproducers of the concerned goods, who are desirous of registering a geographical indication in relation to\nsuch goods shall apply in writing to the Registrar in such form and in such manner and accompanied by\n",
+        "act_name": "The Geographical Indications of Goods (Registration and Protection) Act, 1999",
+        "section": "Section 11",
+        "jurisdiction": "india",
+        "similarity_score": 0.8
+      }
+    ],
+    "confidence": 0.8,
+    "should_abstain": false,
+    "expect_abstain": false,
+    "expected_citation": {
+      "act_name": "The Geographical Indications of Goods (Registration and Protection) Act, 1999",
+      "section": "Section 11"
+    },
+    "retrieval": {
+      "expected_act": "The Geographical Indications of Goods (Registration and Protection) Act, 1999",
+      "expected_section": "Section 11"
+    }
+  },
+  {
+    "id": "q33",
+    "category": "unanswerable",
+    "query": "What is the GST rate on Ayurvedic medicines?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-drugs-and-cosmetics-rules-1945--s157--p2",
+        "text": "The Drugs and Cosmetics Rules, 1945 — Section 157: Conditions for the grant or renewal of a licence in Form 25-D.—Before a licence\n\n157. Conditions for the grant or renewal of a licence in Form 25-D.—Before a licence\n(part 2 of 2)\n(2) The manufacture of Ayurvedic (including Siddha) or Unani drugs shall be\nconducted under the direction and supervision of competent technical staff consisting at\nleas",
+        "act_name": "The Drugs and Cosmetics Rules, 1945",
+        "section": "Section 157",
+        "jurisdiction": "india",
+        "similarity_score": 0.604
+      },
+      {
+        "chunk_id": "the-drugs-and-cosmetics-rules-1945--s163b",
+        "text": "The Drugs and Cosmetics Rules, 1945 — Section 163B: The functions of the Central Drug Laboratory in respect of Ayurvedic, Siddha and Unani\n\n163B. The functions of the Central Drug Laboratory in respect of Ayurvedic, Siddha and Unani\ndrugs shall be carried out at the Pharmacopoeial Laboratory for Ayurvedic, Siddha and Unani\nmedicine, Ghaziabad, (Uttar Pradesh) and the functions of the Director in r",
+        "act_name": "The Drugs and Cosmetics Rules, 1945",
+        "section": "Section 163B",
+        "jurisdiction": "india",
+        "similarity_score": 0.597
+      },
+      {
+        "chunk_id": "the-drugs-and-cosmetics-rules-1945--s154",
+        "text": "The Drugs and Cosmetics Rules, 1945 — Section 154: Form of licence to manufacture Ayurvedic (including Siddha) or Unani drugs\n\n154. Form of licence to manufacture Ayurvedic (including Siddha) or Unani drugs.\n— (1) Subject to the conditions of rule 157 being fulfilled, a licence to manufacture for sale\nany Ayurvedic (including Siddha) or Unani drugs shall be issued in Form 25-D. The licence\nshall b",
+        "act_name": "The Drugs and Cosmetics Rules, 1945",
+        "section": "Section 154",
+        "jurisdiction": "india",
+        "similarity_score": 0.558
+      }
+    ],
+    "confidence": 0.604,
+    "should_abstain": true,
+    "expect_abstain": true,
+    "expected_citation": null,
+    "retrieval": {
+      "expected_act": null,
+      "expected_section": null
+    }
+  },
+  {
+    "id": "q34",
+    "category": "unanswerable",
+    "query": "How much notice must I give an employee before terminating their contract?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-patents-act-1970--s75",
+        "text": "The Patents Act, 1970 — Section 75: Restriction on employees of patent office as to right or interest in patents.—All officers and\n\n75. Restriction on employees of patent office as to right or interest in patents.—All officers and\nemployees of the patents office shall be incapable, during the period for which they hold their\nappointments, to acquire or take, directly or indirectly, except by inher",
+        "act_name": "The Patents Act, 1970",
+        "section": "Section 75",
+        "jurisdiction": "india",
+        "similarity_score": 0.433
+      },
+      {
+        "chunk_id": "the-patents-act-1970--s76",
+        "text": "The Patents Act, 1970 — Section 76: Officers and employees not to furnish information, etc.—An officer or employee in the patent\n\n76. Officers and employees not to furnish information, etc.—An officer or employee in the patent\noffice shall not, except when required or authorised by this Act or under a direction in writing of the\n2[Central Government 3***] or the Controller or by order of a court,—",
+        "act_name": "The Patents Act, 1970",
+        "section": "Section 76",
+        "jurisdiction": "india",
+        "similarity_score": 0.413
+      },
+      {
+        "chunk_id": "the-biological-diversity-act-2002--s14",
+        "text": "The Biological Diversity Act, 2002 — Section 14: Officers and employees of National Biodiversity Authority.—(1) The National Biodiversity\n\n14. Officers and employees of National Biodiversity Authority.—(1) The National Biodiversity\nAuthority may appoint such officers and other employees as it considers necessary for the efficient\ndischarge of its functions under this Act.\n(2) The terms and conditi",
+        "act_name": "The Biological Diversity Act, 2002",
+        "section": "Section 14",
+        "jurisdiction": "india",
+        "similarity_score": 0.384
+      }
+    ],
+    "confidence": 0.433,
+    "should_abstain": true,
+    "expect_abstain": true,
+    "expected_citation": null,
+    "retrieval": {
+      "expected_act": null,
+      "expected_section": null
+    }
+  },
+  {
+    "id": "q35",
+    "category": "unanswerable",
+    "query": "What are the steps to incorporate a private limited company in India?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-cosmetics-rules-2020--s3--p1",
+        "text": "The Cosmetics Rules, 2020 — Section 3: Definitions.—In these rules, unless the context otherwise requires,\n\n(part 1 of 3)\n3. Definitions.—In these rules, unless the context otherwise requires,—\n(a) \"Act\" means the Drugs and Cosmetics Act, 1940 (23 of 1940);\n(b) \"Actual manufacturer\" in relation to import of cosmetics, means a person\nwho manufactures cosmetics at his own manufacturing site in a cou",
+        "act_name": "The Cosmetics Rules, 2020",
+        "section": "Section 3",
+        "jurisdiction": "india",
+        "similarity_score": 0.51
+      },
+      {
+        "chunk_id": "the-geographical-indications-of-goods-re--s7",
+        "text": "The Geographical Indications of Goods (Registration and Protection) Act, 1999 — Section 7: Part A and Part B of the register.—(1) The register referred to in section 6 shall be divided into\n\n7. Part A and Part B of the register.—(1) The register referred to in section 6 shall be divided into\ntwo Parts called respectively Part A and Part B.\n(2) The particulars relating to the registration of the ge",
+        "act_name": "The Geographical Indications of Goods (Registration and Protection) Act, 1999",
+        "section": "Section 7",
+        "jurisdiction": "india",
+        "similarity_score": 0.353
+      },
+      {
+        "chunk_id": "regulations-under-the-patent-cooperation--r26--p45",
+        "text": "Regulations under the Patent Cooperation Treaty — Rule 26\n\nRule 26\n(part 45 of 60)\n(c) Where the receiving Office finds that a requirement under Rule 4.18 or\nparagraph (a) has not been complied with or that the element or part referred to in\nparagraph (a) is not completely contained in the earlier application concerned, the\nreceiving Office shall proceed as provided for in Rule 20.3(b)(i), 20.5(b)",
+        "act_name": "Regulations under the Patent Cooperation Treaty",
+        "section": "Rule 26",
+        "jurisdiction": "international",
+        "similarity_score": 0.347
+      }
+    ],
+    "confidence": 0.51,
+    "should_abstain": true,
+    "expect_abstain": true,
+    "expected_citation": null,
+    "retrieval": {
+      "expected_act": null,
+      "expected_section": null
+    }
+  },
+  {
+    "id": "q36",
+    "category": "unanswerable",
+    "query": "What is the customs import duty on herbal raw material?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-cosmetics-rules-2020--s19",
+        "text": "The Cosmetics Rules, 2020 — Section 19: Documents to be supplied to the Commissioner of Customs.—Before\n\n19. Documents to be supplied to the Commissioner of Customs.—Before\nany cosmetics are imported, a declaration signed by manufacturer or on behalf\nof the manufacturer or by importer or on behalf of the importer that the\ncosmetics comply with the provisions of Chapter III of the Act, and the rule",
+        "act_name": "The Cosmetics Rules, 2020",
+        "section": "Section 19",
+        "jurisdiction": "india",
+        "similarity_score": 0.585
+      },
+      {
+        "chunk_id": "the-drugs-and-cosmetics-act-1940--s11",
+        "text": "The Drugs and Cosmetics Act, 1940 — Section 11: Application of law relating to sea customs and powers of Customs\n\n11. Application of law relating to sea customs and powers of Customs\nOfficers.—(1) The law for the time being in force relating to sea customs and to\ngoods, the import of which is prohibited by section 18 of the Sea Customs Act,\n1878 (8 of 1878)27 shall, subject to the provisions of se",
+        "act_name": "The Drugs and Cosmetics Act, 1940",
+        "section": "Section 11",
+        "jurisdiction": "india",
+        "similarity_score": 0.573
+      },
+      {
+        "chunk_id": "the-drugs-and-cosmetics-rules-1945--s130",
+        "text": "The Drugs and Cosmetics Rules, 1945 — Section 130: Documents to be supplied to the Collector of Customs.− Before any cosmetics are\n\n130. Documents to be supplied to the Collector of Customs.− Before any cosmetics are\nimported, a declaration signed by or on behalf of the manufacturer or by on behalf of the\nimporter that the cosmetics comply with the provisions of Chapter III of the Act, and the\nRul",
+        "act_name": "The Drugs and Cosmetics Rules, 1945",
+        "section": "Section 130",
+        "jurisdiction": "india",
+        "similarity_score": 0.537
+      }
+    ],
+    "confidence": 0.585,
+    "should_abstain": true,
+    "expect_abstain": true,
+    "expected_citation": null,
+    "retrieval": {
+      "expected_act": null,
+      "expected_section": null
+    }
+  },
+  {
+    "id": "q37",
+    "category": "unanswerable",
+    "query": "Which court hears a criminal complaint about food adulteration?",
+    "matched_chunks": [
+      {
+        "chunk_id": "the-drugs-and-cosmetics-act-1940--s35--p2",
+        "text": "The Drugs and Cosmetics Act, 1940 — Section 35: Publication of sentences passed under this Act.—(1) If any person is\n\n35. Publication of sentences passed under this Act.—(1) If any person is\n(part 2 of 3)\n(2) While trying an offence under this Act, a Special Court shall also try an\noffence, other than an offence referred to in sub-section (1), with which the\naccused may, under the Code of Criminal",
+        "act_name": "The Drugs and Cosmetics Act, 1940",
+        "section": "Section 35",
+        "jurisdiction": "india",
+        "similarity_score": 0.493
+      },
+      {
+        "chunk_id": "the-drugs-and-cosmetics-act-1940--s35--p1",
+        "text": "The Drugs and Cosmetics Act, 1940 — Section 35: Publication of sentences passed under this Act.—(1) If any person is\n\n(part 1 of 3)\n35. Publication of sentences passed under this Act.—(1) If any person is\nconvicted of an offence under this Act, 102[the Court before which the\nconviction takes place shall, on application made to it by the Inspector, cause]\nthe offender's name, place of residence, th",
+        "act_name": "The Drugs and Cosmetics Act, 1940",
+        "section": "Section 35",
+        "jurisdiction": "india",
+        "similarity_score": 0.445
+      },
+      {
+        "chunk_id": "the-drugs-and-cosmetics-act-1940--s35--p3",
+        "text": "The Drugs and Cosmetics Act, 1940 — Section 35: Publication of sentences passed under this Act.—(1) If any person is\n\n35. Publication of sentences passed under this Act.—(1) If any person is\n(part 3 of 3)\n(2) A person shall not be qualified to be appointed as a Public Prosecutor\nor a Special Public Prosecutor under this section unless he has been in practice\nas an advocate for not less than seven ",
+        "act_name": "The Drugs and Cosmetics Act, 1940",
+        "section": "Section 35",
+        "jurisdiction": "india",
+        "similarity_score": 0.433
+      }
+    ],
+    "confidence": 0.493,
+    "should_abstain": true,
+    "expect_abstain": true,
+    "expected_citation": null,
+    "retrieval": {
+      "expected_act": null,
+      "expected_section": null
+    }
   }
 ]

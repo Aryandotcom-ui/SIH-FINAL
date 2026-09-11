@@ -17,33 +17,74 @@
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   border-bottom: 1px solid var(--border);
 }
-.topbar-inner { display: flex; align-items: center; gap: 20px; height: 66px; }
+/* The bar is allowed to be wider than the reading shell. Six destinations
+   plus two toggles do not fit in 1160px, and a nav clipped behind a toggle
+   is worse than a bar that runs slightly wider than the prose under it. */
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 66px;
+  max-width: 1460px;
+}
 
-.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; }
+/* The nav grew from three destinations to six, and two header toggles
+   joined it. Everything in this bar therefore refuses to wrap and is
+   allowed to shrink instead: a wrapped nav pushes the bar to two lines and
+   a wrapped wordmark reads as a rendering bug. Below 1180px the nav moves
+   to the scrollable strip underneath rather than being squeezed further. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .brand-mark {
   width: 38px; height: 38px;
   border-radius: 11px;
   display: grid; place-items: center;
-  background: linear-gradient(150deg, var(--green-600), var(--green-800));
+  background: linear-gradient(150deg, var(--navy-600), var(--navy-800));
   box-shadow: var(--shadow-brand);
   flex-shrink: 0;
 }
 .brand-name { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
 .brand-sub { font-size: 11.5px; color: var(--text-faint); letter-spacing: .04em; text-transform: uppercase; font-weight: 600; }
 
-.nav { display: flex; gap: 4px; }
+.nav {
+  display: flex;
+  gap: 2px;
+  /* Never compress. Flex would otherwise shrink the nav below the width
+     its labels need, and the overflow slides silently under the toggles —
+     which reads as a missing destination rather than as a layout bug. The
+     breakpoints below take the row away wholesale instead. */
+  flex-shrink: 0;
+}
 .nav a {
-  padding: 8px 14px;
+  padding: 8px 11px;
   border-radius: var(--r-pill);
-  font-size: 14.5px;
+  font-size: 13.6px;
   font-weight: 500;
   color: var(--text-muted);
   text-decoration: none;
+  white-space: nowrap;
   transition: all var(--t-fast) var(--ease);
 }
+
+/* The bar sheds its contents in order of how little they cost to lose.
+   First the tagline, then the toggles (which have a home in the strip
+   below), and only last the nav itself. */
+@media (max-width: 1460px) {
+  .brand-sub { display: none; }
+}
+@media (max-width: 1080px) {
+  .nav { display: none; }
+}
 .nav a:hover { background: var(--bg-sunken); color: var(--text); }
-.nav a.active { background: var(--green-700); color: #fff; }
-:root[data-theme='dark'] .nav a.active { background: var(--green-300); color: var(--green-900); }
+.nav a.active { background: var(--navy-700); color: #fff; }
+:root[data-theme='dark'] .nav a.active { background: var(--navy-300); color: var(--navy-900); }
 
 .icon-btn {
   width: 38px; height: 38px;
@@ -70,7 +111,7 @@
 }
 .hero h1 em {
   font-style: normal;
-  background: linear-gradient(96deg, var(--green-600) 10%, var(--turmeric-500) 92%);
+  background: linear-gradient(96deg, var(--navy-600) 10%, var(--turmeric-500) 92%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -121,10 +162,10 @@
   border-radius: 13px;
   display: grid; place-items: center;
   margin-bottom: 16px;
-  background: var(--green-50);
-  color: var(--green-700);
+  background: var(--navy-50);
+  color: var(--navy-700);
 }
-:root[data-theme='dark'] .feature-ico { background: #17301F; color: var(--green-300); }
+:root[data-theme='dark'] .feature-ico { background: #17301F; color: var(--navy-300); }
 .feature h3 { font-size: 19px; margin-bottom: 9px; }
 .feature p { font-size: 14.6px; color: var(--text-muted); line-height: 1.6; }
 
@@ -196,7 +237,7 @@
   text-align: left;
   transition: all var(--t-fast) var(--ease);
 }
-.example:hover { border-style: solid; border-color: var(--brand); color: var(--brand-text); background: var(--green-50); transform: translateY(-1px); }
+.example:hover { border-style: solid; border-color: var(--brand); color: var(--brand-text); background: var(--navy-50); transform: translateY(-1px); }
 :root[data-theme='dark'] .example:hover { background: #17301F; }
 
 /* --- classification panel ----------------------------------------------- */
@@ -227,7 +268,7 @@
 .answer-head {
   display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;
   padding: 18px 24px;
-  background: linear-gradient(180deg, var(--green-50), transparent);
+  background: linear-gradient(180deg, var(--navy-50), transparent);
   border-bottom: 1px solid var(--border);
 }
 :root[data-theme='dark'] .answer-head { background: linear-gradient(180deg, #16301F, transparent); }
@@ -275,13 +316,13 @@
   width: 27px; height: 27px;
   border-radius: 8px;
   display: grid; place-items: center;
-  background: var(--green-700);
+  background: var(--navy-700);
   color: #fff;
   font-size: 12.5px;
   font-weight: 700;
   font-family: var(--font-mono);
 }
-:root[data-theme='dark'] .cite-n { background: var(--green-300); color: var(--green-900); }
+:root[data-theme='dark'] .cite-n { background: var(--navy-300); color: var(--navy-900); }
 .cite-act { display: block; font-weight: 600; font-size: 15px; line-height: 1.35; }
 .cite-sec { display: block; font-size: 13.4px; color: var(--text-muted); margin-top: 3px; }
 
@@ -418,11 +459,12 @@
 .tab:hover { color: var(--text); }
 .tab[aria-selected='true'] { color: var(--brand-text); border-bottom-color: var(--brand); font-weight: 600; }
 
-/* --- mobile nav: the desktop nav collapses below 720px, and these are the
-   same destinations rather than a dead end --------------------------------- */
+/* --- mobile nav: the desktop nav collapses below 980px (six destinations
+   plus two header toggles need the room), and these are the same
+   destinations rather than a dead end -------------------------------------- */
 
 .nav-mobile { display: none; }
-@media (max-width: 720px) {
+@media (max-width: 1080px) {
   .nav-mobile {
     display: flex;
     gap: 4px;
@@ -443,8 +485,8 @@
     white-space: nowrap;
     transition: all var(--t-fast) var(--ease);
   }
-  .nav-mobile a.active { background: var(--green-700); color: #fff; }
-  :root[data-theme='dark'] .nav-mobile a.active { background: var(--green-300); color: var(--green-900); }
+  .nav-mobile a.active { background: var(--navy-700); color: #fff; }
+  :root[data-theme='dark'] .nav-mobile a.active { background: var(--navy-300); color: var(--navy-900); }
 }
 
 /* --- jurisdiction scope ------------------------------------------------- */
@@ -492,12 +534,12 @@
 .scope-opt:hover:not(:disabled) { color: var(--text); }
 .scope-opt:disabled { opacity: .6; cursor: not-allowed; }
 .scope-opt[aria-pressed='true'] {
-  background: var(--green-700);
+  background: var(--navy-700);
   color: #fff;
   box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
-:root[data-theme='dark'] .scope-opt[aria-pressed='true'] { background: var(--green-300); color: var(--green-900); }
+:root[data-theme='dark'] .scope-opt[aria-pressed='true'] { background: var(--navy-300); color: var(--navy-900); }
 .scope-n {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -519,9 +561,9 @@
   border: 1px solid transparent;
   align-self: flex-start;
 }
-.jtag-in { background: var(--green-50); color: var(--green-700); border-color: color-mix(in srgb, var(--green-700) 22%, transparent); }
+.jtag-in { background: var(--navy-50); color: var(--navy-700); border-color: color-mix(in srgb, var(--navy-700) 22%, transparent); }
 .jtag-intl { background: var(--info-bg); color: var(--info); border-color: color-mix(in srgb, var(--info) 24%, transparent); }
-:root[data-theme='dark'] .jtag-in { background: #17301F; color: var(--green-300); }
+:root[data-theme='dark'] .jtag-in { background: #17301F; color: var(--navy-300); }
 
 /* --- per-jurisdiction answer block -------------------------------------- */
 
@@ -683,4 +725,376 @@ textarea.input { resize: vertical; line-height: 1.55; }
 
 @media (max-width: 900px) {
   .cases-grid { grid-template-columns: 1fr !important; }
+}
+
+
+/* ==========================================================================
+   Header controls
+   ==========================================================================
+   Jurisdiction and language live in the header rather than inside one page.
+   Both decide what an answer *is* rather than how it looks, so a user must
+   be able to see the current setting from any screen that produces one —
+   a jurisdiction you cannot see is one you will not notice is wrong.
+   ========================================================================== */
+
+.topbar-controls { display: flex; align-items: center; gap: 8px; }
+.topbar-controls-mobile { display: none; }
+
+/* Everything inline needs about 1460px. Below that the toggles move to the
+   strip under the bar — still visible on every screen, which is the point
+   of promoting them out of the Ask page, but no longer squeezing the nav.
+   These must come after the two base rules above: a media query carries no
+   extra specificity, so an earlier one would simply lose. */
+@media (max-width: 1500px) {
+  .topbar-controls { display: none; }
+  .topbar-controls-mobile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px 10px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+  }
+  /* When the nav strip is showing too, the two rows share one divider
+     rather than stacking a second line under the first. */
+  .nav-mobile + .topbar-controls-mobile { border-top: 0; padding-top: 0; }
+}
+
+/* A denser scope toggle for the header, where it competes with the nav. */
+.scope-compact .scope-opt { padding: 5px 10px; font-size: 12.8px; gap: 5px; }
+.scope-compact .scope-n { display: none; }
+
+.lang {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+}
+.lang-opt {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  font-size: 12.8px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.lang-opt:hover { color: var(--text); }
+.lang-opt[aria-pressed='true'] {
+  background: var(--navy-700);
+  color: #fff;
+  font-weight: 600;
+}
+:root[data-theme='dark'] .lang-opt[aria-pressed='true'] {
+  background: var(--navy-300);
+  color: var(--navy-900);
+}
+
+/* ==========================================================================
+   Hero additions
+   ========================================================================== */
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+  font-size: 12.4px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+}
+
+.trust-line {
+  margin-top: 22px;
+  font-size: 13.8px;
+  font-weight: 500;
+  color: var(--brand-text);
+  letter-spacing: .01em;
+}
+
+/* The architecture principle, stated before anyone has to ask it. */
+.principle {
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 26px;
+  max-width: 68ch;
+}
+.principle-h {
+  font-size: clamp(24px, 3.2vw, 32px);
+  margin-bottom: 12px;
+}
+.principle-p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+.features-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1040px) { .features-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px)  { .features-4 { grid-template-columns: 1fr; } }
+
+.feature-link { text-decoration: none; display: block; }
+.feature-link:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+.feature-code { display: block; margin-top: 12px; font-size: 11.6px; }
+
+.btn-onbrand {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.28);
+}
+.btn-onbrand:hover { background: rgba(255,255,255,.2); }
+
+.footer-link { font-size: 13.4px; color: var(--text-muted); }
+
+/* ==========================================================================
+   Screening band — GREEN / AMBER / RED
+   ==========================================================================
+   The reason line is not decoration. GREEN means both that nothing fired
+   AND that the screening had enough facts to mean it; "nothing triggered"
+   and "nothing triggered because nobody answered the question that decides
+   it" must never share a colour.
+   ========================================================================== */
+
+.band {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+.band-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.band-title { display: block; font-size: 15.5px; font-weight: 600; }
+.band-reason { font-size: 14.2px; line-height: 1.55; color: var(--text-muted); margin-top: 4px; }
+.band-tag {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+}
+.band-ok      { background: var(--ok-bg);   border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.band-ok      .band-dot, .band-ok .band-tag   { background: var(--ok); color: #fff; }
+.band-warn    { background: var(--warn-bg);  border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.band-warn    .band-dot, .band-warn .band-tag { background: var(--warn); color: #fff; }
+.band-stop    { background: var(--stop-bg);  border-color: color-mix(in srgb, var(--stop) 30%, transparent); }
+.band-stop    .band-dot, .band-stop .band-tag { background: var(--stop); color: #fff; }
+.band-neutral .band-dot, .band-neutral .band-tag { background: var(--ink-400); color: #fff; }
+
+.lede-note { font-size: 15.6px; line-height: 1.6; color: var(--text); max-width: 70ch; }
+
+.sec-h {
+  font-size: 19px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   Numbered steps
+   ========================================================================== */
+
+.steps-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+@media (max-width: 860px) { .steps-strip { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .steps-strip { grid-template-columns: 1fr; } }
+
+.step-mini {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  background: var(--bg-raised);
+}
+.step-mini strong { display: block; font-size: 14.2px; font-weight: 600; line-height: 1.35; }
+.step-mini .faint { display: block; font-size: 12.8px; margin-top: 3px; line-height: 1.45; }
+
+.step-n {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--accent);
+  padding-top: 2px;
+}
+.step-n-lg {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--brand-text);
+  padding-top: 0;
+}
+
+/* ==========================================================================
+   Three-state yes/no
+   ==========================================================================
+   The third state is the point: leaving a fact unknown must be a visible
+   choice, not a silent default to "no". A two-state control has to pick
+   one, and picking "no" is how a screening quietly turns green on a
+   question nobody asked.
+   ========================================================================== */
+
+.yesno {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+}
+.yesno-label { display: block; font-size: 14.4px; font-weight: 500; line-height: 1.4; }
+.yesno-hint { display: block; font-size: 12.8px; color: var(--text-faint); margin-top: 3px; line-height: 1.45; }
+
+.oblig-block { border-color: color-mix(in srgb, var(--stop) 34%, var(--border)); }
+
+/* ==========================================================================
+   Citation verification
+   ========================================================================== */
+
+.vmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.4px;
+  font-weight: 500;
+}
+.vmark-ok { color: var(--ok); }
+.vmark-no { color: var(--stop); }
+
+.source-gone { opacity: .78; border-style: dashed; }
+
+.answer-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+}
+
+/* ==========================================================================
+   Knowledge Sources
+   ========================================================================== */
+
+.doc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (max-width: 760px) { .doc-grid { grid-template-columns: 1fr; } }
+
+.doc {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-sm);
+}
+/* Dashed, because we are citing an instrument whose text we do not hold —
+   the border says "incomplete" without saying "broken". */
+.doc-pending { border-style: dashed; background: var(--bg-sunken); }
+
+.doc-head { display: grid; gap: 9px; }
+.doc-title { font-size: 16px; line-height: 1.32; }
+.doc-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12.8px;
+  color: var(--text-faint);
+}
+.doc-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.doc-link { font-size: 13.2px; font-weight: 500; color: var(--brand-text); }
+
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.4px;
+}
+.kv-row:last-child { border-bottom: 0; }
+
+/* ==========================================================================
+   About — known limits
+   ========================================================================== */
+
+.limit {
+  display: flex;
+  gap: 13px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+}
+
+/* ==========================================================================
+   IP & regulatory routes
+   ========================================================================== */
+
+.routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+@media (max-width: 900px) { .routes { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .routes { grid-template-columns: 1fr; } }
+
+.route {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+}
+.route-t { display: block; font-size: 14.6px; font-weight: 600; }
+.route-q { font-size: 13.4px; line-height: 1.5; color: var(--text-muted); margin-top: 6px; }
+.route-basis { display: block; font-size: 11.4px; margin-top: 9px; }
+
+/* ==========================================================================
+   Reviewer session bar
+   ========================================================================== */
+
+.session-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-sunken);
 }

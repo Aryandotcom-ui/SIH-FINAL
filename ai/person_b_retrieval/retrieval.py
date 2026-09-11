@@ -23,7 +23,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 from ai.person_b_retrieval.schema import Chunk, Classification, MatchedChunk, RetrievalResult
 from ai.person_b_retrieval.embeddings import Embedder, cosine_sim
-from ai.person_b_retrieval.confidence import compute_confidence, decide_abstain
+from ai.person_b_retrieval.confidence import ABSTAIN_THRESHOLD, compute_confidence
 from ai.shared.taxonomy import acts_for_formulation  # single source of truth,
 # shared with the production store.py — see ai/shared/taxonomy.py for why
 # this must not be a second copy of the mapping.
@@ -61,6 +61,7 @@ def retrieve(
     jurisdiction: Optional[str] = None,
     classification: Optional[Classification] = None,
     top_k: int = 3,
+    threshold: float = ABSTAIN_THRESHOLD,
 ) -> RetrievalResult:
     """Stage 1 (filter) + Stage 2 (semantic search) + confidence scoring."""
 
@@ -92,8 +93,13 @@ def retrieve(
             )
         )
 
-    confidence = compute_confidence(matched)
-    abstain = decide_abstain(confidence, matched)
+    # compute_confidence judges whether the retrieved evidence covers the
+    # subject of the question, so it needs the query text and returns the
+    # abstention decision with the score. This module was left calling the
+    # pre-rewrite signature, which raised a TypeError on every call.
+    confidence, abstain = compute_confidence(
+        query=query, matched_chunks=matched, threshold=threshold,
+    )
 
     return RetrievalResult(
         query=query,

@@ -66,6 +66,12 @@ def test_retrieve_relevant_india_query_returns_correct_citation(all_chunks, embe
         embedder=embedder,
         jurisdiction="india",
         classification=Classification(formulation_type="classical"),
+        # The fixture embedder is a stub whose similarity scores are not on
+        # the same scale as the production one, so the module's own 0.50
+        # default is not a meaningful bar for it. Test at the threshold the
+        # application actually runs (settings.abstain_threshold), and state
+        # it rather than inheriting a default that happens to disagree.
+        threshold=0.20,
     )
     assert result.should_abstain is False
     assert result.confidence > 0

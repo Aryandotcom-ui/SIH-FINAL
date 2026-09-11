@@ -152,6 +152,24 @@ These are real and worth knowing before you rely on anything here.
   `sentence-transformers`, uncomment it in `ai/requirements.txt`, and rebuild
   with `./scripts/run.sh --rebuild` — queries must be encoded in the same
   space as the chunks, so switching embedders *requires* a rebuild.
+- **Abstention does not currently fire for out-of-scope questions.** Measured,
+  not estimated: over the 22 retrieval-scored questions in
+  `ai/person_c_generation/eval`, the system answered all five deliberately
+  out-of-scope ones (GST rates, company incorporation, customs duty...) rather
+  than abstaining. The cause is a threshold set below where the signal
+  separates, not broken machinery: answerable questions score 0.597-0.906 and
+  unanswerable ones 0.200-0.723, so raising `abstain_threshold` from 0.20
+  toward 0.50-0.60 would catch 3 of the 5 at no measured cost to the 17
+  answerable. That change has not been made on a five-question sample - see
+  `ai/person_c_generation/eval/README.md` before moving it. Note that
+  `backend/app/config.py` (0.20) and `ai/person_b_retrieval/confidence.py`
+  (0.50) currently disagree about the default.
+- **Retrieval is hybrid, and Recall@5 is 58.8%.** Dense vector search plus a
+  BM25-style lexical pass (`ai/store.py`); the lexical stage is worth about 17
+  points of recall over dense-only on this corpus. The remaining misses are
+  mostly a neighbouring provision of the right Act outranking the governing
+  one, so read the passages on the Evidence view rather than trusting the
+  ranking. There is no cross-encoder rerank stage.
 - **Deadlines marked "unverified"** come from rules whose current figures
   were not confirmed against amended text; the request-for-examination
   window in particular changed in 2024. Confirm before relying on any date.

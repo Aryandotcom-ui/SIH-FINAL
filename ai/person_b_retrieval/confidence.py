@@ -25,10 +25,18 @@ def _tokens(text: str) -> set[str]:
     }
 
 
+# The default abstention threshold for this module. The application passes
+# its own configured value (settings.abstain_threshold) rather than relying
+# on this, so the two can legitimately differ — but a caller that does not
+# pass one should get a single named default, not two literals that can
+# drift apart.
+ABSTAIN_THRESHOLD = 0.50
+
+
 def compute_confidence(
     query: str,
     matched_chunks,
-    threshold: float = 0.50,
+    threshold: float = ABSTAIN_THRESHOLD,
 ) -> tuple[float, bool]:
     """
     Confidence measures whether the retrieved evidence actually covers
@@ -108,6 +116,6 @@ def compute_confidence(
     should_abstain = confidence < threshold
 
     return round(confidence, 4), should_abstain
-def decide_abstain(confidence: float, threshold: float = 0.50) -> bool:
+def decide_abstain(confidence: float, threshold: float = ABSTAIN_THRESHOLD) -> bool:
     """Return True when confidence is too low to answer reliably."""
     return confidence < threshold

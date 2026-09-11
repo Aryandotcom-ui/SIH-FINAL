@@ -1,30 +1,37 @@
 /* ==========================================================================
    IP-SAKTI Sahayak — design system
 
-   Palette reasoning: this is a legal-regulatory tool for Ayurveda, so the
-   ground is warm parchment rather than the usual cool SaaS grey, the brand
-   anchor is a deep botanical green (vetiver/tulsi), and the accent is
-   turmeric. Trust cues — confidence, citation, abstention — get their own
-   semantic ramp that stays legible against both.
+   Palette reasoning: this is a legal-regulatory tool, so the brand anchor is
+   an ink navy that reads as statute and record rather than as software, and
+   the accent is a turmeric/terracotta amber that keeps the Ayurvedic warmth
+   without turning the page into a brochure. The ground stays a warm
+   off-white rather than the usual cool SaaS grey — cool grey under navy
+   reads as a bank, and this is meant to be approachable by someone who has
+   never spoken to a patent agent.
+
+   Trust cues — confidence, citation, abstention — get their own semantic
+   ramp that stays legible against both, and that ramp is never reused for
+   brand decoration: green on this interface always means "this checks out",
+   never "this is our colour".
    ========================================================================== */
 
 :root {
   /* --- brand ------------------------------------------------------------ */
-  --green-900: #0F2A1D;
-  --green-800: #163A28;
-  --green-700: #1D4E35;
-  --green-600: #276749;
-  --green-500: #35855D;
-  --green-300: #7FBF9B;
-  --green-100: #DDEEE4;
-  --green-50:  #EFF7F2;
+  --navy-900: #0B182E;
+  --navy-800: #12233F;
+  --navy-700: #1B3253;
+  --navy-600: #24406A;
+  --navy-500: #365A8C;
+  --navy-300: #8FA9C9;
+  --navy-100: #DCE4EF;
+  --navy-50:  #EFF3F8;
 
   --turmeric-700: #8A4F0B;
-  --turmeric-600: #B4690E;
-  --turmeric-500: #D98324;
-  --turmeric-400: #E8A33D;
-  --turmeric-200: #F6DCAE;
-  --turmeric-100: #FBEED4;
+  --turmeric-600: #A85C15;
+  --turmeric-500: #C4732B;
+  --turmeric-400: #D9822B;
+  --turmeric-200: #F2D9B4;
+  --turmeric-100: #FAEEDB;
 
   --copper-600: #A65437;
   --copper-400: #C97B5A;
@@ -37,10 +44,10 @@
   --ink-500: #7A7266;
   --ink-400: #9C9488;
   --ink-300: #C3BBAE;
-  --ink-200: #E0D9CD;
-  --ink-100: #EFE9DE;
-  --paper:    #FBF8F2;
-  --paper-2:  #FFFDF8;
+  --ink-200: #E4E1DA;
+  --ink-100: #EFECE5;
+  --paper:    #F7F7F5;
+  --paper-2:  #FFFFFF;
 
   /* --- semantic ---------------------------------------------------------- */
   --ok:      #2F7D55;
@@ -59,17 +66,19 @@
   --border:        var(--ink-200);
   --border-strong: var(--ink-300);
   --text:          var(--ink-900);
-  --text-muted:    var(--ink-600);
-  --text-faint:    var(--ink-500);
-  --brand:         var(--green-700);
-  --brand-text:    var(--green-800);
+  /* Body copy is a muted slate blue rather than warm grey: it sits under
+     the navy chrome without the two reading as different families. */
+  --text-muted:    #3E4C63;
+  --text-faint:    #6B7688;
+  --brand:         var(--navy-700);
+  --brand-text:    var(--navy-800);
   --accent:        var(--turmeric-500);
 
   /* --- shadows: warm-tinted, never neutral grey -------------------------- */
-  --shadow-sm: 0 1px 2px rgba(42, 38, 33, .06), 0 1px 3px rgba(42, 38, 33, .05);
-  --shadow-md: 0 2px 4px rgba(42, 38, 33, .05), 0 6px 16px -4px rgba(42, 38, 33, .10);
-  --shadow-lg: 0 4px 8px rgba(42, 38, 33, .05), 0 16px 40px -8px rgba(42, 38, 33, .16);
-  --shadow-brand: 0 8px 28px -6px rgba(29, 78, 53, .30);
+  --shadow-sm: 0 1px 2px rgba(20, 28, 42, .05), 0 1px 3px rgba(20, 28, 42, .04);
+  --shadow-md: 0 2px 4px rgba(20, 28, 42, .05), 0 6px 16px -4px rgba(20, 28, 42, .09);
+  --shadow-lg: 0 4px 8px rgba(20, 28, 42, .05), 0 16px 40px -8px rgba(20, 28, 42, .14);
+  --shadow-brand: 0 8px 28px -6px rgba(11, 24, 46, .28);
 
   /* --- type -------------------------------------------------------------- */
   --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
@@ -96,16 +105,16 @@
 }
 
 :root[data-theme='dark'] {
-  --bg:            #12100D;
-  --bg-raised:     #1A1714;
-  --bg-sunken:     #0C0A08;
-  --border:        #2E2921;
-  --border-strong: #423B31;
-  --text:          #F5F0E6;
-  --text-muted:    #B5AC9D;
-  --text-faint:    #8C8375;
-  --brand:         var(--green-300);
-  --brand-text:    #A5D6BB;
+  --bg:            #0C121C;
+  --bg-raised:     #141C29;
+  --bg-sunken:     #080D15;
+  --border:        #24303F;
+  --border-strong: #354356;
+  --text:          #EEF1F5;
+  --text-muted:    #AEB9C9;
+  --text-faint:    #7F8B9C;
+  --brand:         var(--navy-300);
+  --brand-text:    #B6C8E0;
   --accent:        var(--turmeric-400);
 
   --ok:      #6FC397;   --ok-bg:   #16301F;
@@ -132,8 +141,8 @@ body {
   background-color: var(--bg);
   /* A faint warm grain keeps large parchment fields from looking flat. */
   background-image:
-    radial-gradient(1100px 620px at 12% -8%, rgba(53,133,93,.09), transparent 62%),
-    radial-gradient(900px 520px at 92% 2%, rgba(217,131,36,.09), transparent 60%);
+    radial-gradient(1100px 620px at 12% -8%, rgba(27,50,83,.07), transparent 62%),
+    radial-gradient(900px 520px at 92% 2%, rgba(196,115,43,.08), transparent 60%);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-body);
@@ -223,7 +232,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
 .btn-primary {
-  background: linear-gradient(178deg, var(--green-600), var(--green-800));
+  background: linear-gradient(178deg, var(--navy-600), var(--navy-800));
   color: #fff;
   box-shadow: var(--shadow-brand);
 }
@@ -265,12 +274,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .chip:hover { border-color: var(--brand); color: var(--brand-text); }
 .chip[aria-pressed='true'] {
-  background: var(--green-700);
-  border-color: var(--green-700);
+  background: var(--navy-700);
+  border-color: var(--navy-700);
   color: #fff;
   box-shadow: var(--shadow-brand);
 }
-:root[data-theme='dark'] .chip[aria-pressed='true'] { color: var(--green-900); background: var(--green-300); border-color: var(--green-300); }
+:root[data-theme='dark'] .chip[aria-pressed='true'] { color: var(--navy-900); background: var(--navy-300); border-color: var(--navy-300); }
 
 .badge {
   display: inline-flex;

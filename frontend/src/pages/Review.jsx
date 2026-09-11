@@ -1,12 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Navigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
-import { Refresh, Check, X, Alert } from '../components/Icons.jsx';
+import { useAuth } from '../App.jsx';
+import { Refresh, Check, X, Alert, Shield } from '../components/Icons.jsx';
 import { Badge, Empty, Explain, Disclaimer, ErrorState } from '../components/Bits.jsx';
 
 /* The review gate. Framed for the corpus maintainer: what changed upstream,
    what the classifier decided, and what still needs a human. Every control
    here posts to the real /api/v1/updates endpoints — approving actually runs
-   the ingestion pipeline, so nothing on this screen is a gesture. */
+   the ingestion pipeline, so nothing on this screen is a gesture.
+
+   The gate below is a courtesy, not the security boundary. The server
+   rejects an unauthenticated decision regardless of what this component
+   renders (see backend/app/auth.py); hiding the controls just means a
+   reviewer finds out they need to sign in before typing a decision rather
+   than after. */
 
 const TIER = {
   auto_publish:       { tone: 'ok',   label: 'Auto-published', blurb: 'Small change on a trusted official source — ingested without waiting for a person.' },
@@ -22,6 +30,26 @@ const TABS = [
 ];
 
 export default function Review() {
+  const { identity, ready } = useAuth();
+  const location = useLocation();
+
+  // "Not signed in" and "we haven't checked the stored token yet" are
+  // different states. Redirecting during the second one bounces a signed-in
+  // reviewer to the login form on every reload.
+  if (!ready) {
+    return (
+      <div className="shell" style={{ maxWidth: 720 }}>
+        <div className="skeleton" style={{ height: 120 }} />
+      </div>
+    );
+  }
+  if (!identity) {
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
+  }
+  return <Console identity={identity} />;
+}
+
+function Console({ identity }) {
   const [tab, setTab] = useState('pending');
   const [rows, setRows] = useState(null);
   const [error, setError] = useState(null);
@@ -71,6 +99,21 @@ export default function Review() {
 
   return (
     <div className="shell" style={{ maxWidth: 980 }}>
+      <div className="session-bar">
+        <Shield size={16} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+        <span style={{ fontSize: 13.6 }}>
+          Signed in as <strong>{identity.username}</strong>
+        </span>
+        <Badge tone={identity.role === 'ADMIN' ? 'ok' : 'neutral'}>{identity.role}</Badge>
+        {identity.role === 'REVIEWER' && (
+          <span className="faint" style={{ fontSize: 12.8 }}>
+            Ingestion needs ADMIN
+          </span>
+        )}
+        <span className="spacer" />
+        <Link to="/login" className="btn btn-ghost btn-sm">Session</Link>
+      </div>
+
       <div style={{ marginBottom: 24 }}>
         <span className="eyebrow">Corpus review</span>
         <h1 style={{ fontSize: 'clamp(30px, 4vw, 40px)', margin: '10px 0 10px' }}>
@@ -144,9 +187,10 @@ export default function Review() {
 
       <div style={{ marginTop: 26 }}>
         <Disclaimer>
-          Review actions are shown here for the corpus maintainer. In deployment these endpoints sit
-          behind authentication — the reviewer identity recorded against a decision is only as
-          trustworthy as the login behind it.
+          Every decision here is recorded against <strong>{identity.username}</strong> in the audit
+          trail, taken from your signed-in session — the browser cannot set that name. Approving
+          records a decision; ingestion is always a separate, explicit step, and needs the ADMIN
+          role.
         </Disclaimer>
       </div>
     </div>
@@ -157,13 +201,13 @@ function ReviewRow({ r, onDone }) {
   const t = TIER[r.tier] ?? { tone: 'neutral', label: r.tier };
   const [busy, setBusy] = useState(null);
   const [failed, setFailed] = useState(null);
-  const [reviewer, setReviewer] = useState('');
   const [notes, setNotes] = useState('');
 
-  /* decided_by is required by the API and is the whole point of the audit
-     row, so it is a real input rather than a hardcoded "operator". An empty
-     one disables the actions instead of being invented on the user's behalf. */
-  const canDecide = reviewer.trim().length > 0;
+  /* There is no "your name" field any more, and its absence is the point.
+     decided_by used to be typed here and sent in the body, which meant the
+     audit trail recorded whatever the client claimed. The server now takes
+     it from the bearer token and ignores the body entirely, so a field here
+     would be theatre — and nothing gates the buttons on it either. */
 
   async function act(kind, fn) {
     setBusy(kind);
@@ -178,7 +222,8 @@ function ReviewRow({ r, onDone }) {
     }
   }
 
-  const decision = () => ({ decided_by: reviewer.trim(), notes: notes.trim() || null });
+  // Notes only. Who decided is the token holder, resolved server-side.
+  const decision = () => ({ notes: notes.trim() || null });
 
   return (
     <div className="card rise" style={{ padding: '19px 21px' }}>
@@ -213,16 +258,7 @@ function ReviewRow({ r, onDone }) {
       {(r.status === 'pending' || r.needs_audit || r.status === 'approved' || r.status === 'queued_for_ingest') && (
         <div className="decide">
           <div className="decide-fields">
-            <label className="decide-field">
-              <span className="field-label">Your name<span className="req"> *</span></span>
-              <input
-                className="input"
-                value={reviewer}
-                onChange={e => setReviewer(e.target.value)}
-                placeholder="Recorded against this decision"
-              />
-            </label>
-            <label className="decide-field">
+            <label className="decide-field" style={{ gridColumn: '1 / -1' }}>
               <span className="field-label">Notes</span>
               <input
                 className="input"
@@ -238,14 +274,14 @@ function ReviewRow({ r, onDone }) {
               <>
                 <button
                   className="btn btn-primary btn-sm"
-                  disabled={!canDecide || busy}
+                  disabled={!!busy}
                   onClick={() => act('approve', () => api.reviewApprove(r.id, decision()))}
                 >
                   <Check size={15} /> {busy === 'approve' ? 'Approving…' : 'Approve'}
                 </button>
                 <button
                   className="btn btn-ghost btn-sm"
-                  disabled={!canDecide || busy}
+                  disabled={!!busy}
                   onClick={() => act('reject', () => api.reviewReject(r.id, decision()))}
                 >
                   <X size={15} /> {busy === 'reject' ? 'Rejecting…' : 'Reject'}
@@ -266,7 +302,7 @@ function ReviewRow({ r, onDone }) {
             {r.needs_audit && (
               <button
                 className="btn btn-ghost btn-sm"
-                disabled={!canDecide || busy}
+                disabled={!!busy}
                 onClick={() => act('audit', () => api.reviewClearAudit(r.id, decision()))}
               >
                 <Check size={15} /> {busy === 'audit' ? 'Signing off…' : 'Sign off'}
