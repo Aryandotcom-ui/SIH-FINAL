@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Scale, Shield, Doc, Leaf, Check, Search, Flask, Pin } from '../components/Icons.jsx';
-import { Badge, Disclaimer, Stat } from '../components/Bits.jsx';
+import { Badge, Disclaimer, Stat, CorpusMissing } from '../components/Bits.jsx';
 import { useCorpus } from '../App.jsx';
 
 /* The landing page carries the "understood by everyone" load: a vaidya or a
@@ -123,6 +123,8 @@ export default function Home() {
       </section>
 
       <section className="shell">
+        {/* The stat strip already shows zeroes here; this explains them. */}
+        {corpus && corpus.chunks === 0 && <CorpusMissing />}
         <div className="stat-strip">
           {STATS.map(([n, l]) => <Stat key={l} value={n} label={l} />)}
         </div>

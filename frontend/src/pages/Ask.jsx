@@ -10,7 +10,7 @@ import {
 } from '../components/Icons.jsx';
 import {
   Confidence, Disclose, Badge, Chip, Explain, Empty, Disclaimer,
-  ErrorState, ScopeToggle, JurisdictionTag,
+  ErrorState, ScopeToggle, JurisdictionTag, CorpusMissing,
 } from '../components/Bits.jsx';
 
 const EXAMPLES = [
@@ -112,6 +112,10 @@ export default function Ask() {
           compliance duties your facts trigger.
         </p>
       </div>
+
+      {/* Nothing below works without an index, so say so before the user
+          spends a question finding out. */}
+      {corpus && corpus.chunks === 0 && <CorpusMissing />}
 
       {/* The scope sits directly above the composer and stays visible: which
           legal system an answer is drawn from is part of the question, not a

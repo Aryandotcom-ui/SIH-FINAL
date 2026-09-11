@@ -557,6 +557,17 @@ class AIService:
         insufficient = retrieval.should_abstain
         generation_mode = "none"
 
+        # "The corpus does not cover your question" and "there is no corpus"
+        # are different failures and must not share a message. An unbuilt
+        # index abstains on everything at 0% confidence, which reads exactly
+        # like a well-behaved out-of-scope answer -- so a user sees the same
+        # reply to every question and reasonably concludes the product is
+        # broken, when the actual fix is one ingest command. Telling them
+        # their question was out of scope, when nothing was ever searched,
+        # is the kind of confidently wrong answer this system exists to
+        # avoid; it just happens to be about itself.
+        corpus_empty = insufficient and self.corpus_count() == 0
+
         if insufficient:
             # Nothing in this jurisdiction matched well enough. Do not let
             # the model fill the gap from its own knowledge — the whole
@@ -568,6 +579,12 @@ class AIService:
 
             final = FinalAnswer(
                 answer_text=(
+                    "The search index has not been built, so there is nothing "
+                    "to search. No question can be answered until the corpus "
+                    "is ingested — this is not a limit of the corpus\'s "
+                    "coverage. Run: python -m ai.cli data/pdfs --manifest "
+                    "ai/corpus.yaml --model tfidf"
+                ) if corpus_empty else (
                     f"I don't have {label}-specific guidance on this in the "
                     f"corpus, so I can't answer it from {label} sources. "
                     f"Try the {other} scope, or Both."
@@ -644,6 +661,7 @@ class AIService:
             "gate": gate,
             "generation": generation_mode,
             "insufficient": insufficient,
+            "corpus_empty": corpus_empty,
         }
 
     def answer(
@@ -765,6 +783,7 @@ class AIService:
                     "abstained": part["final"].abstained,
                     "generation": part["generation"],
                     "insufficient": part["insufficient"],
+                    "corpus_empty": part["corpus_empty"],
                 })
 
             disclaimer_translation = translate_answer_from_english(

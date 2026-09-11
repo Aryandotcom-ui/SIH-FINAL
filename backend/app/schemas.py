@@ -130,6 +130,11 @@ class ScopedAnswer(BaseModel):
     # from. Distinct from a plain abstention only in what the UI can offer:
     # the other scope may well cover the question, so the message names it.
     insufficient: bool = False
+    # True when there is no index at all, rather than an index that failed to
+    # cover the question. An unbuilt corpus abstains on everything at 0%,
+    # which is indistinguishable from a well-behaved out-of-scope answer
+    # unless the response says which one happened — so it says.
+    corpus_empty: bool = False
 
 
 class QueryResponse(BaseModel):

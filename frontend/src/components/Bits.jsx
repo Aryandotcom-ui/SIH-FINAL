@@ -315,3 +315,28 @@ export function VerifyMark({ verified }) {
     ? <span className="vmark vmark-ok"><Check size={12} /> supported by a retrieved passage</span>
     : <span className="vmark vmark-no"><Alert size={12} /> not found in the retrieved passages</span>;
 }
+
+/**
+ * The index is missing.
+ *
+ * An unbuilt corpus abstains on every question at 0% confidence, which looks
+ * exactly like a working product that cannot answer anything — the same
+ * reply to every input, with no hint that the cause is a missing build step
+ * rather than the question. This says which, before the user has typed
+ * anything, because the alternative is watching them conclude the whole
+ * system is broken.
+ */
+export function CorpusMissing() {
+  return (
+    <div className="notice notice-stop" role="alert" style={{ marginBottom: 20 }}>
+      <Alert size={18} style={{ flexShrink: 0 }} />
+      <span>
+        <strong>The search index has not been built.</strong> There are no passages to
+        search, so every question will abstain at 0% confidence regardless of what you
+        ask — this is a missing build step, not a limit of the corpus. Build it with{' '}
+        <code>./scripts/run.sh</code>, or directly:{' '}
+        <code>python -m ai.cli data/pdfs --manifest ai/corpus.yaml --model tfidf</code>
+      </span>
+    </div>
+  );
+}
