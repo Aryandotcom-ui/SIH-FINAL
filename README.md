@@ -164,12 +164,14 @@ These are real and worth knowing before you rely on anything here.
   `ai/person_c_generation/eval/README.md` before moving it. Note that
   `backend/app/config.py` (0.20) and `ai/person_b_retrieval/confidence.py`
   (0.50) currently disagree about the default.
-- **Retrieval is hybrid, and Recall@5 is 58.8%.** Dense vector search plus a
-  BM25-style lexical pass (`ai/store.py`); the lexical stage is worth about 17
-  points of recall over dense-only on this corpus. The remaining misses are
-  mostly a neighbouring provision of the right Act outranking the governing
-  one, so read the passages on the Evidence view rather than trusting the
-  ranking. There is no cross-encoder rerank stage.
+- **Retrieval is hybrid, and Recall@5 is 82.4%.** Dense vector search plus a
+  BM25-style lexical pass (`ai/store.py`), over chunks capped at 1200/1800
+  characters. That cap is load-bearing: at the previous 2000/3500 the same
+  questions scored 58.8%, because a long section dilutes its own decisive
+  clause past the point the lexical pass can find it. The remaining misses
+  are mostly a neighbouring provision of the right Act outranking the
+  governing one, so read the passages on the Evidence view rather than
+  trusting the ranking. There is no cross-encoder rerank stage.
 - **Deadlines marked "unverified"** come from rules whose current figures
   were not confirmed against amended text; the request-for-examination
   window in particular changed in 2024. Confirm before relying on any date.

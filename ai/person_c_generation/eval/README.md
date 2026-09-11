@@ -62,19 +62,50 @@ pass in `ai/store.py`), at the configured `abstain_threshold = 0.20`.
 | | |
 |---|---|
 | Generation | 37/37 (100%) |
-| Recall@5 | 10/17 (58.8%) |
+| Recall@5 | 14/17 (82.4%) |
 | Abstention accuracy | 17/22 (77.3%) |
 | - correctly answered | 17/17 (100%) |
 | - correctly abstained | **0/5 (0%)** |
 
 ### Recall
 
-58.8%. For reference, the same 22 questions score **41.2%** against a
-dense-only retriever with no lexical pass, so the BM25 stage is worth about
-17 points of recall on this corpus. Not a solved problem: most of the seven
-misses are a neighbouring provision of the *right* Act outranking the
-governing one - q21 returns the Preamble instead of s.19, q32 returns s.82
-instead of s.11.
+82.4%, up from 58.8% before the chunk sizes were reduced (see
+`ai/sectioner.py`). Measured over the same 17 questions, rebuilding the
+index at each size:
+
+| SOFT / HARD max chars | chunks | Recall@5 |
+|---|---|---|
+| 2000 / 3500 (previous) | 1763 | 58.8% |
+| **1200 / 1800 (current)** | **2274** | **82.4%** |
+| 800 / 1200 | 2849 | 76.5% |
+| 600 / 900 | 3360 | 82.4% |
+| 400 / 700 | 4149 | 82.4% |
+
+Oversized chunks were the dominant retrieval defect on this corpus. A
+3200-character section carrying one decisive clause dilutes that clause
+past the point BM25 can find it, because length normalisation penalises the
+long chunk and term density collapses.
+
+The three remaining misses are a neighbouring provision of the *right* Act
+outranking the governing one.
+
+### A query expansion that was measured and rejected
+
+Both retrieval channels match words, so a question in the asker's
+vocabulary can miss a provision written in the draftsman's. The clearest
+case is "Can a classical Ayurvedic formulation be patented in India?" -
+answered by Patents Act s.3(p), which says "traditional knowledge" and
+contains neither "Ayurvedic" nor "formulation". It still does not retrieve.
+
+A lexicon mapping domain vocabulary to statutory vocabulary was built and
+measured. It put s.3 at rank 1 for that query - and dropped overall
+Recall@5 from 82.4% to 64.7% with all entries, and to 76.5% even pared back
+to the two entries that query needed. It was removed.
+
+It is recorded here because the failure is instructive: it fixed the
+question being looked at while breaking questions that were not, and only
+the eval caught it. Anyone tempted to add query expansion here should
+measure it against all 17 before keeping it.
 
 ### Abstention - the actionable finding
 

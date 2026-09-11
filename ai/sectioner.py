@@ -26,11 +26,43 @@ from dataclasses import dataclass
 
 log = logging.getLogger(__name__)
 
-# Target size in characters. bge-small/e5-small take 512 tokens (~2000
-# chars); we allow a section to overrun that rather than split it, and
-# only force a split past HARD_MAX.
-SOFT_MAX_CHARS = 2000
-HARD_MAX_CHARS = 3500
+# Target size in characters.
+#
+# These were 2000/3500, chosen so a section would usually survive as a
+# single chunk: the citation is what the user is shown, and an unsplit
+# section cites cleanly. The reasoning is sound; the sizes were too
+# generous, and retrieval paid for it. A 3200-character section carrying
+# one decisive clause dilutes that clause to near-invisibility -- BM25's
+# length normalisation penalises the long chunk, and the term density the
+# lexical pass depends on collapses.
+#
+# Patents Act s.3 is the worst case in this corpus: 3225 characters
+# spanning (a) through (p), where (p) is the traditional-knowledge
+# exclusion that much of this product's reason for existing turns on. It
+# did not reach the top 30 for "Can a classical Ayurvedic formulation be
+# patented in India?" -- the entire top 20 was Drugs and Cosmetics
+# licensing, which says "Ayurvedic" often and says nothing about patents.
+#
+# Measured over the 17 answerable retrieval questions in
+# ai/person_c_generation/eval, rebuilding the index at each size:
+#
+#     2000 / 3500   1763 chunks   Recall@5  58.8%
+#     1200 / 1800   2274 chunks   Recall@5  82.4%
+#      800 / 1200   2849 chunks   Recall@5  76.5%
+#      600 /  900   3360 chunks   Recall@5  82.4%
+#      400 /  700   4149 chunks   Recall@5  82.4%
+#
+# 82.4% is a plateau, so the choice is the cheapest point on it.
+# 1200/1800 reaches it with the least chunk growth, and stays inside the
+# ~2000-character window a 512-token embedding model can actually read --
+# so it does not buy a lexical gain by truncating what a neural embedder
+# would see once one is configured.
+#
+# Splitting does not cost citation quality: _split_oversized cuts only at
+# sub-clause boundaries, repeats the heading on every part, and labels
+# each "(part n of m)", so a retrieved fragment still says what it is.
+SOFT_MAX_CHARS = 1200
+HARD_MAX_CHARS = 1800
 MIN_BODY_CHARS = 40
 
 _ROMAN = "IVXLCDM"
