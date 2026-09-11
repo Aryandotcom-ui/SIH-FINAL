@@ -14,8 +14,64 @@ from .config import settings
 log = logging.getLogger(__name__)
 
 
+def _build_index_if_empty() -> None:
+    """Ingest data/pdfs when the index has no chunks.
+
+    Deliberately never fatal. A server that refuses to start because it
+    could not ingest is worse than one that starts and says the index is
+    missing — the second can still serve /status, /health and the corpus
+    library, which is exactly what someone diagnosing this needs.
+    """
+    from pathlib import Path
+
+    from .services.ai_service import ai_service
+
+    try:
+        if ai_service.corpus_count() > 0:
+            return
+    except Exception:
+        log.exception("could not read the corpus count; skipping the index build")
+        return
+
+    pdf_dir = Path(settings.pdf_dir)
+    pdfs = sorted(pdf_dir.glob("*.pdf")) if pdf_dir.is_dir() else []
+    if not pdfs:
+        log.error(
+            "index is empty and no PDFs were found in %s — the API will abstain "
+            "on every question until a corpus is ingested", pdf_dir,
+        )
+        return
+
+    log.warning(
+        "index is empty; ingesting %d PDF(s) from %s (about a minute) ...",
+        len(pdfs), pdf_dir,
+    )
+    try:
+        from ai.cli import main as ingest
+
+        code = ingest([
+            str(pdf_dir),
+            "--manifest", settings.corpus_manifest_path,
+            "--chroma-path", settings.chroma_path,
+            "--sqlite-path", settings.sqlite_registry_path,
+            "--model", "tfidf",
+        ])
+        if code != 0:
+            log.error("index build exited with %s; the API will still start", code)
+            return
+        # The service may have cached an embedder resolved before the
+        # artifact existed, so drop what it built against nothing.
+        ai_service.reset_index_cache()
+        log.warning("index built: %d chunks", ai_service.corpus_count())
+    except Exception:
+        log.exception("index build failed; the API will still start")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.auto_build_index:
+        _build_index_if_empty()
+
     scheduler = None
     if settings.updates_scheduler_enabled:
         from ai.updates.scheduler import start_scheduler

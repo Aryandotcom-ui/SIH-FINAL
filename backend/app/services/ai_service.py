@@ -138,6 +138,20 @@ class AIService:
         """
         return bool(getattr(type(self.embedder), "CALIBRATED", True))
 
+    def reset_index_cache(self) -> None:
+        """Drop the cached embedder and store.
+
+        Both are resolved lazily and then held for the process lifetime,
+        and the embedder in particular is chosen by which artifact sits
+        beside the index. Anything resolved before the index was built was
+        resolved against an absent artifact, so after a build the cached
+        pair is stale and would keep querying the empty collection.
+        """
+        with self._locks["embedder"]:
+            self._embedder = None
+        with self._locks["store"]:
+            self._store = None
+
     def corpus_count(self) -> int:
         return self.store.count()
 

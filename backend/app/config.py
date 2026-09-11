@@ -28,6 +28,21 @@ class Settings(BaseSettings):
     abstain_threshold: float = 0.20
 
     corpus_manifest_path: str = str(REPO_ROOT / "ai" / "corpus.yaml")
+    # Source PDFs the index is built from.
+    pdf_dir: str = str(REPO_ROOT / "data" / "pdfs")
+    # Build the index at startup when it is empty.
+    #
+    # data/chroma is a build artifact and is gitignored, so EVERY fresh
+    # clone and every deploy starts with no index. Without this the API
+    # comes up looking healthy and abstains on every question at 0%
+    # confidence, which is indistinguishable from a working product that
+    # cannot answer anything. Making the server build what it needs is the
+    # difference between "run one more command you were never told about"
+    # and "it works".
+    #
+    # Turn off where the index is mounted from a volume or baked into the
+    # image, so startup does not redo work the deploy already did.
+    auto_build_index: bool = True
     sqlite_registry_path: str = str(REPO_ROOT / "data" / "registry.sqlite3")
     audit_db_path: str = str(REPO_ROOT / "data" / "audit.sqlite3")
     # DPDP storage-limitation bound for the audit trail. purge_older_than()
